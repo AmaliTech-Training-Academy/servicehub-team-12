@@ -1,6 +1,6 @@
 import pandas as pd
 
-from etl_pipeline import transform_daily_volume, transform_sla_metrics
+from etl.transform import transform_daily_volume, transform_sla_metrics
 
 
 def _requests_for_transformations() -> pd.DataFrame:
