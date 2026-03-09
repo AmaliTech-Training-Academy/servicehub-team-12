@@ -1,25 +1,29 @@
 package com.servicehub.model;
 
 import com.servicehub.model.enums.RequestCategory;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
-@Entity @Table(name = "departments")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Entity
+@Table(name = "departments")
+@Getter
+@Setter
 public class Department {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private RequestCategory category;
-
-    private String contactEmail;
-
-    @Column(nullable = false)
-    private Boolean isActive = true;
 }

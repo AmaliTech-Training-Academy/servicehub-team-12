@@ -1,5 +1,7 @@
 package com.servicehub.model.enums;
 
-public enum Role {
-    EMPLOYEE, AGENT, MANAGER
+public enum UserRole {
+    ADMIN,
+    AGENT,
+    USER
 }

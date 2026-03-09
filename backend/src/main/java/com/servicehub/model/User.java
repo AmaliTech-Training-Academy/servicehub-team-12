@@ -1,38 +1,47 @@
 package com.servicehub.model;
 
-import com.servicehub.model.enums.Role;
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
+import com.servicehub.model.enums.UserRole;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
 public class User {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, length = 255)
     private String email;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
 
-    @Column(nullable = false)
-    private String fullName;
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
+    @Column(nullable = false, length = 20)
+    private UserRole role;
 
-    private String department;
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
 
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
 }
