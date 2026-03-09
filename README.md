@@ -48,6 +48,19 @@ The commit message hook enforces Conventional Commits and issue traceability:
 - Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`
 - Short description must start lowercase, be 72 characters or fewer, and not end with a period
 - Commit message must include an issue reference: `(#123)`, `Closes #123`, or `Fixes #123`
+- Issue reference in the commit message is always required, even if the branch name has no ticket
 - If branch has a ticket (example: `feature/123-add-auth`), commit message must reference the same ticket number
 
 Example: `feat(auth): add login rate limiting (#123)`
+
+### Commit Message Examples
+
+Branch name examples (ticketed):
+- `feature/23-add-auth`
+- `bugfix/23-fix-jwt-expiry`
+- `chore/23-update-deps`
+
+Commit message examples (must include #23 when on a branch with ticket 23):
+- `feat(auth): add login rate limiting (#23)`
+- `fix(requests): handle missing SLA policy (Fixes #23)`
+- `docs(readme): add setup steps (Closes #23)`
