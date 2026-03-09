@@ -1,0 +1,27 @@
+name: Merge CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - backend/**
+            - data-engineering/**
+            - .github/workflows/**
+
+permissions:
+    contents: read
+    id-token: write 
+
+jobs:
+    ci:
+        name: Backend merge checks + image build
+        uses: ./.github/workflows/ci-reusable.yml
+        with:
+            run_checkstyle: true
+            run_tests: true
+            build_image: true
+            push_image: false
+            run_data_tests: false
+            run_checkov: false
+            deploy_dags: false
+        secrets: inherit
