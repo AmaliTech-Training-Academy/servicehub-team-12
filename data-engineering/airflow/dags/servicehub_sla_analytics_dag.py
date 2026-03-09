@@ -18,7 +18,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 # Ensure the project root is on sys.path so that ETL modules can be imported
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(os.getenv("SERVICEHUB_DE_ROOT", Path(__file__).resolve().parents[2]))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 

@@ -1,13 +1,10 @@
 """
 Airflow DAG to support manual loading of sample data for development and testing.
-
-The implementation of the actual sample data generator will be added in a
-separate feature. For now, this DAG provides a safe, no-op task that can be
-extended without changing the orchestration structure.
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -16,7 +13,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 # Ensure the project root is on sys.path so that shared modules can be imported
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(os.getenv("SERVICEHUB_DE_ROOT", Path(__file__).resolve().parents[2]))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
