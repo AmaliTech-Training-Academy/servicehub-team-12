@@ -15,6 +15,9 @@ REQUIRED_REQUEST_COLUMNS: List[str] = [
     "category",
     "priority",
     "status",
+    "sla_deadline",
+    "first_response_at",
+    "is_sla_breached",
     "created_at",
     "resolved_at",
 ]

@@ -1,6 +1,11 @@
 import pandas as pd
 
-from sample_data.generator import SAMPLE_CATEGORIES, PRIORITIES, SampleConfig, generate_sample_requests
+from sample_data.generator import (
+    SERVICE_CATEGORIES,
+    PRIORITIES,
+    SampleConfig,
+    generate_sample_requests,
+)
 
 
 def test_generate_sample_requests_respects_configuration():
@@ -8,7 +13,7 @@ def test_generate_sample_requests_respects_configuration():
     df = generate_sample_requests(config)
 
     assert len(df) == 50
-    assert set(df["category"].unique()).issubset(set(SAMPLE_CATEGORIES))
+    assert set(df["category"].unique()).issubset(set(SERVICE_CATEGORIES))
     assert set(df["priority"].unique()).issubset(set(PRIORITIES))
 
     # Ensure timestamps look sensible

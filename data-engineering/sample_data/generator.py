@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 
 SERVICE_CATEGORIES = ["IT_SUPPORT", "FACILITIES", "HR_REQUEST"]
-PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+PRIORITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
 STATUSES = ["OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"]
 
 
@@ -34,7 +34,7 @@ class SampleConfig:
     """
 
     num_requests: int = 200
-    days_back: int = 14
+    days_back: int = 60
 
 
 def _resolution_hours_for(priority: str) -> float:
@@ -58,9 +58,14 @@ def generate_sample_requests(config: SampleConfig | None = None) -> pd.DataFrame
     now = datetime.utcnow()
     rows: List[dict] = []
 
+    # Distributions derived from the data contract
+    category_weights = [0.5, 0.25, 0.25]
+    priority_weights = [0.10, 0.25, 0.45, 0.20]
+    status_weights = [0.15, 0.10, 0.20, 0.40, 0.15]
+
     for i in range(cfg.num_requests):
-        category = random.choice(SERVICE_CATEGORIES)
-        priority = random.choice(PRIORITIES)
+        category = random.choices(SERVICE_CATEGORIES, weights=category_weights, k=1)[0]
+        priority = random.choices(PRIORITIES, weights=priority_weights, k=1)[0]
 
         created_at = now - timedelta(
             days=random.randint(0, cfg.days_back),
@@ -68,14 +73,28 @@ def generate_sample_requests(config: SampleConfig | None = None) -> pd.DataFrame
             minutes=random.randint(0, 59),
         )
 
-        is_resolved = random.random() < 0.8
+        status = random.choices(STATUSES, weights=status_weights, k=1)[0]
+        is_resolved = status in {"RESOLVED", "CLOSED"}
+
         if is_resolved:
             resolution_delta = timedelta(hours=_resolution_hours_for(priority))
             resolved_at = created_at + resolution_delta
-            status = "RESOLVED"
         else:
             resolved_at = None
-            status = random.choice(["OPEN", "ASSIGNED", "IN_PROGRESS"])
+
+        # Approximate first_response_at and SLA breach flags
+        if status in {"ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"}:
+            # Response occurs shortly after creation for most tickets
+            response_offset_hours = random.uniform(0.1, max(0.5, _resolution_hours_for(priority) / 2))
+            first_response_at = created_at + timedelta(hours=response_offset_hours)
+        else:
+            first_response_at = None
+
+        # Roughly 15% of resolved tickets should be marked as breached
+        if is_resolved:
+            is_sla_breached = random.random() < 0.15
+        else:
+            is_sla_breached = False
 
         rows.append(
             {
@@ -88,6 +107,8 @@ def generate_sample_requests(config: SampleConfig | None = None) -> pd.DataFrame
                 "created_at": created_at,
                 "updated_at": created_at if not is_resolved else resolved_at,
                 "resolved_at": resolved_at,
+                "first_response_at": first_response_at,
+                "is_sla_breached": is_sla_breached,
             }
         )
 

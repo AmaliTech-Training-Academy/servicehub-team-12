@@ -18,18 +18,25 @@ logger = get_logger(__name__)
 def extract_requests(engine: Engine) -> pd.DataFrame:
     """
     Extract service request records from the source database.
+
+    The selected columns align with the ServiceHub data contract and include
+    SLA-related fields required for analytics.
     """
     query = text(
         """
         SELECT sr.id,
                sr.title,
+               sr.description,
                sr.category,
                sr.priority,
                sr.status,
+               sr.sla_deadline,
+               sr.first_response_at,
+               sr.is_sla_breached,
                sr.created_at,
                sr.updated_at,
                sr.resolved_at,
-               u.name AS requester_name,
+               u.full_name AS requester_name,
                d.name AS department_name
         FROM service_requests sr
         JOIN users u ON sr.requester_id = u.id
