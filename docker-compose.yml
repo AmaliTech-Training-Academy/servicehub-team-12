@@ -1,19 +1,48 @@
-version: '3.8'
+x-airflow-common: &airflow-common
+  build:
+    context: ./data-engineering
+    dockerfile: Dockerfile
+  env_file:
+    - .env
+  volumes:
+    - ./data-engineering/dags:/opt/airflow/dags
+    - ./data-engineering:/opt/airflow/pipeline
+    - ./logs:/opt/airflow/logs
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${AIRFLOW_DB}
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DB_NAME: ${POSTGRES_DB}
+    DB_USER: ${POSTGRES_USER}
+    DB_PASSWORD: ${POSTGRES_PASSWORD}
+    LOG_LEVEL: INFO
+    APP_ENV: ${APP_ENV:-development}
+    PYTHONPATH: /opt/airflow/pipeline
+  depends_on:
+    postgres:
+      condition: service_healthy
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: servicehub-db
     environment:
-      POSTGRES_DB: servicehub
-      POSTGRES_USER: servicehub
-      POSTGRES_PASSWORD: servicehub_pass
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U servicehub"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,15 +50,48 @@ services:
   backend:
     build: ./backend
     container_name: servicehub-backend
-    ports:
-      - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/servicehub
-      SPRING_DATASOURCE_USERNAME: servicehub
-      SPRING_DATASOURCE_PASSWORD: servicehub_pass
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SERVER_PORT: 8080
+
+    ports:
+      - "${BACKEND_PORT}:8080"
     depends_on:
       postgres:
         condition: service_healthy
+
+  airflow-init:
+    <<: *airflow-common
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin123 --firstname Admin --lastname User --role Admin --email admin@servicehub.com || true"
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: airflow webserver
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: airflow scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
