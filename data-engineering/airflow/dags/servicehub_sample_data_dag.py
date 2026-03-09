@@ -20,7 +20,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
+from etl_pipeline import get_engine  # noqa: E402
 from logging_config import get_logger  # noqa: E402
+from sample_data.generator import SampleConfig, load_sample_requests  # noqa: E402
 
 
 logger = get_logger(__name__)
@@ -28,13 +30,13 @@ logger = get_logger(__name__)
 
 def _load_sample_data() -> None:
     """
-    Placeholder callable for loading sample data.
-
-    This will be replaced with a real sample data generator and loader in a
-    dedicated feature. Keeping this as a no-op ensures the DAG is deployable
-    without failing tasks.
+    Load synthetic sample data for development and testing.
     """
-    logger.info("Sample data loader task executed. No-op implementation in place.")
+    engine = get_engine()
+    config = SampleConfig()
+    logger.info("Starting sample data generation using config: %s", config)
+    load_sample_requests(engine, config=config)
+    logger.info("Completed sample data generation and load.")
 
 
 with DAG(
