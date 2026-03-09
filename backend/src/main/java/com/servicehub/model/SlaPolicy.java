@@ -1,6 +1,6 @@
 package com.servicehub.model;
 
-import com.servicehub.model.enums.Priority;
+import com.servicehub.model.enums.RequestPriority;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,7 +13,7 @@ public class SlaPolicy {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true)
-    private Priority priority;
+    private RequestPriority priority;
 
     @Column(nullable = false)
     private Integer responseTimeHours;

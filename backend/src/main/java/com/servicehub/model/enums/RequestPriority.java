@@ -1,5 +1,5 @@
 package com.servicehub.model.enums;
 
-public enum Priority {
+public enum RequestPriority {
     LOW, MEDIUM, HIGH, CRITICAL
 }
