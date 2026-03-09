@@ -2,12 +2,12 @@ import pandas as pd
 import pytest
 
 from exceptions import DataValidationError
-from validation import (
+from etl.validation import (
     ALLOWED_CATEGORIES,
     ALLOWED_PRIORITIES,
     ALLOWED_STATUSES,
-    validate_requests_df,
-    validate_sla_policies_df,
+    validate_and_split_requests,
+    validate_and_split_sla_policies,
 )
 
 
@@ -27,55 +27,56 @@ def _base_requests_frame() -> pd.DataFrame:
     )
 
 
-def test_validate_requests_df_happy_path():
+def test_validate_and_split_requests_happy_path():
     df = _base_requests_frame()
-    validated = validate_requests_df(df)
-    assert not validated.empty
-    assert set(validated["category"].unique()).issubset(ALLOWED_CATEGORIES)
-    assert set(validated["priority"].unique()).issubset(ALLOWED_PRIORITIES)
-    assert set(validated["status"].unique()).issubset(ALLOWED_STATUSES)
+    valid, invalid = validate_and_split_requests(df)
+    assert not valid.empty
+    assert invalid.empty
+    assert set(valid["category"].unique()).issubset(ALLOWED_CATEGORIES)
+    assert set(valid["priority"].unique()).issubset(ALLOWED_PRIORITIES)
+    assert set(valid["status"].unique()).issubset(ALLOWED_STATUSES)
 
 
-def test_validate_requests_df_missing_required_column_raises():
+def test_validate_and_split_requests_missing_required_column_raises():
     df = _base_requests_frame().drop(columns=["title"])
     with pytest.raises(DataValidationError) as exc:
-        validate_requests_df(df)
+        validate_and_split_requests(df)
     assert "missing required columns" in str(exc.value)
 
 
-def test_validate_requests_df_invalid_category_raises():
+def test_validate_and_split_requests_invalid_category_quarantines():
     df = _base_requests_frame()
     df.loc[0, "category"] = "UNKNOWN_CAT"
-    with pytest.raises(DataValidationError) as exc:
-        validate_requests_df(df)
-    assert "invalid categories" in str(exc.value)
+    valid, invalid = validate_and_split_requests(df)
+    assert valid.empty
+    assert len(invalid) == 1
 
 
-def test_validate_requests_df_invalid_priority_raises():
+def test_validate_and_split_requests_invalid_priority_quarantines():
     df = _base_requests_frame()
     df.loc[0, "priority"] = "P1"
-    with pytest.raises(DataValidationError) as exc:
-        validate_requests_df(df)
-    assert "invalid priorities" in str(exc.value)
+    valid, invalid = validate_and_split_requests(df)
+    assert valid.empty
+    assert len(invalid) == 1
 
 
-def test_validate_requests_df_invalid_status_raises():
+def test_validate_and_split_requests_invalid_status_quarantines():
     df = _base_requests_frame()
     df.loc[0, "status"] = "WAITING"
-    with pytest.raises(DataValidationError) as exc:
-        validate_requests_df(df)
-    assert "invalid statuses" in str(exc.value)
+    valid, invalid = validate_and_split_requests(df)
+    assert valid.empty
+    assert len(invalid) == 1
 
 
-def test_validate_requests_df_invalid_timestamp_order_raises():
+def test_validate_and_split_requests_invalid_timestamp_order_quarantines():
     df = _base_requests_frame()
     df.loc[0, "resolved_at"] = "2023-12-31T12:00:00Z"
-    with pytest.raises(DataValidationError) as exc:
-        validate_requests_df(df)
-    assert "resolved_at is earlier than created_at" in str(exc.value)
+    valid, invalid = validate_and_split_requests(df)
+    assert valid.empty
+    assert len(invalid) == 1
 
 
-def test_validate_sla_policies_df_happy_path():
+def test_validate_and_split_sla_policies_happy_path():
     df = pd.DataFrame(
         [
             {
@@ -85,11 +86,12 @@ def test_validate_sla_policies_df_happy_path():
             }
         ]
     )
-    validated = validate_sla_policies_df(df)
-    assert not validated.empty
+    valid, invalid = validate_and_split_sla_policies(df)
+    assert not valid.empty
+    assert invalid.empty
 
 
-def test_validate_sla_policies_df_invalid_priority_raises():
+def test_validate_and_split_sla_policies_invalid_priority_quarantines():
     df = pd.DataFrame(
         [
             {
@@ -99,7 +101,7 @@ def test_validate_sla_policies_df_invalid_priority_raises():
             }
         ]
     )
-    with pytest.raises(DataValidationError) as exc:
-        validate_sla_policies_df(df)
-    assert "invalid priorities" in str(exc.value)
+    valid, invalid = validate_and_split_sla_policies(df)
+    assert valid.empty
+    assert len(invalid) == 1
 
