@@ -1,22 +1,16 @@
 x-airflow-common: &airflow-common
-  build:
-    context: ./data-engineering
-    dockerfile: Dockerfile
+  image: apache/airflow:3.1.7
   env_file:
     - .env
-  volumes:
-    - ./data-engineering:/app
-    - ./data-engineering/logs:/app/.airflow/logs
   environment:
-    AIRFLOW_HOME: /app/.airflow
+    &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${AIRFLOW_DB}
     AIRFLOW__CORE__FERNET_KEY: ""
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-    AIRFLOW__CORE__DAGS_FOLDER: /app/airflow/dags
-    AIRFLOW__WEBSERVER__WEB_SERVER_PORT: "8080"
-    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "False"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${AIRFLOW_DB}
     DB_HOST: postgres
     DB_PORT: "5432"
     DB_NAME: ${POSTGRES_DB}
@@ -24,9 +18,10 @@ x-airflow-common: &airflow-common
     DB_PASSWORD: ${POSTGRES_PASSWORD}
     LOG_LEVEL: INFO
     APP_ENV: ${APP_ENV:-development}
-    PYTHONPATH: /app
-    SERVICEHUB_DE_ROOT: /app
-    ETL_TEMP_DIR: /tmp/servicehub_etl
+    PYTHONPATH: /opt/airflow
+  volumes:
+    - ./data-engineering:/opt/airflow
+    - ./data-engineering/logs:/opt/airflow/logs
   depends_on:
     postgres:
       condition: service_healthy
@@ -72,7 +67,7 @@ services:
 
   airflow-webserver:
     <<: *airflow-common
-    command: airflow webserver --port 8080
+    command: airflow webserver
     ports:
       - "8000:8080"
     depends_on:
