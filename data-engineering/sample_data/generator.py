@@ -11,6 +11,7 @@ import random
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List
+from uuid import uuid4
 
 import pandas as pd
 from sqlalchemy import text
@@ -98,8 +99,8 @@ def generate_sample_requests(config: SampleConfig | None = None) -> pd.DataFrame
 
         rows.append(
             {
-                # Intentionally omit `id` so that database auto-increment columns
-                # can be used where available.
+                # Generate UUIDs explicitly to align with the data contract.
+                "id": uuid4(),
                 "title": f"{category.title().replace('_', ' ')} request #{i + 1}",
                 "category": category,
                 "priority": priority,
