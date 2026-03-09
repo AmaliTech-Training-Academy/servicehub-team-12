@@ -7,7 +7,9 @@ debugging more transparent.
 
 from __future__ import annotations
 
+import os
 import sys
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -45,25 +47,50 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
+TEMP_DIR = Path(os.getenv("ETL_TEMP_DIR", "/tmp/servicehub_etl"))
 
-def _extract_requests(**_: object) -> str:
+
+def _ensure_temp_dir() -> Path:
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    return TEMP_DIR
+
+
+def _extract_requests(**context: object) -> None:
     """
-    Extract service requests and return them as a JSON string for downstream tasks.
+    Extract service requests and persist them to a temporary file for
+    downstream tasks to consume.
     """
+    ti = context["ti"]
+    logical_date_str = context.get("ds_nodash") or datetime.utcnow().strftime("%Y%m%d")
+
     engine = get_engine()
     df = extract_requests(engine)
     logger.info("Airflow extract_requests produced %d rows", len(df))
-    return df.to_json(orient="records", date_format="iso")
+
+    temp_dir = _ensure_temp_dir()
+    path = temp_dir / f"requests_{logical_date_str}_{uuid.uuid4().hex}.parquet"
+    df.to_parquet(path)
+
+    ti.xcom_push(key="requests_path", value=str(path))
 
 
-def _extract_sla_policies(**_: object) -> str:
+def _extract_sla_policies(**context: object) -> None:
     """
-    Extract SLA policies and return them as a JSON string for downstream tasks.
+    Extract SLA policies and persist them to a temporary file for
+    downstream tasks to consume.
     """
+    ti = context["ti"]
+    logical_date_str = context.get("ds_nodash") or datetime.utcnow().strftime("%Y%m%d")
+
     engine = get_engine()
     df = extract_sla_policies(engine)
     logger.info("Airflow extract_sla_policies produced %d rows", len(df))
-    return df.to_json(orient="records", date_format="iso")
+
+    temp_dir = _ensure_temp_dir()
+    path = temp_dir / f"sla_policies_{logical_date_str}_{uuid.uuid4().hex}.parquet"
+    df.to_parquet(path)
+
+    ti.xcom_push(key="sla_policies_path", value=str(path))
 
 
 def _validate_and_quarantine(**context: object) -> None:
@@ -73,11 +100,15 @@ def _validate_and_quarantine(**context: object) -> None:
     """
     ti = context["ti"]
 
-    requests_json = ti.xcom_pull(task_ids="extract_requests")
-    sla_json = ti.xcom_pull(task_ids="extract_sla_policies")
+    requests_path = ti.xcom_pull(task_ids="extract_requests", key="requests_path")
+    sla_path = ti.xcom_pull(task_ids="extract_sla_policies", key="sla_policies_path")
 
-    requests_df = pd.read_json(requests_json, orient="records") if requests_json else pd.DataFrame()
-    sla_df = pd.read_json(sla_json, orient="records") if sla_json else pd.DataFrame()
+    requests_df = (
+        pd.read_parquet(requests_path) if requests_path and Path(requests_path).exists() else pd.DataFrame()
+    )
+    sla_df = (
+        pd.read_parquet(sla_path) if sla_path and Path(sla_path).exists() else pd.DataFrame()
+    )
 
     engine = get_engine()
 
@@ -98,14 +129,16 @@ def _validate_and_quarantine(**context: object) -> None:
     except ETLBaseError:
         logger.exception("Failed to load quarantined data in Airflow DAG; continuing.")
 
-    ti.xcom_push(
-        key="valid_requests",
-        value=valid_requests.to_json(orient="records", date_format="iso"),
-    )
-    ti.xcom_push(
-        key="valid_sla",
-        value=valid_sla.to_json(orient="records", date_format="iso"),
-    )
+    temp_dir = _ensure_temp_dir()
+
+    valid_requests_path = temp_dir / f"valid_requests_{uuid.uuid4().hex}.parquet"
+    valid_sla_path = temp_dir / f"valid_sla_{uuid.uuid4().hex}.parquet"
+
+    valid_requests.to_parquet(valid_requests_path)
+    valid_sla.to_parquet(valid_sla_path)
+
+    ti.xcom_push(key="valid_requests_path", value=str(valid_requests_path))
+    ti.xcom_push(key="valid_sla_path", value=str(valid_sla_path))
 
 
 def _compute_and_load_sla_metrics(**context: object) -> None:
@@ -113,13 +146,19 @@ def _compute_and_load_sla_metrics(**context: object) -> None:
     Compute SLA metrics from validated data and load them into the analytics table.
     """
     ti = context["ti"]
-    valid_requests_json = ti.xcom_pull(task_ids="validate_and_quarantine", key="valid_requests")
-    valid_sla_json = ti.xcom_pull(task_ids="validate_and_quarantine", key="valid_sla")
+    valid_requests_path = ti.xcom_pull(task_ids="validate_and_quarantine", key="valid_requests_path")
+    valid_sla_path = ti.xcom_pull(task_ids="validate_and_quarantine", key="valid_sla_path")
 
     requests_df = (
-        pd.read_json(valid_requests_json, orient="records") if valid_requests_json else pd.DataFrame()
+        pd.read_parquet(valid_requests_path)
+        if valid_requests_path and Path(valid_requests_path).exists()
+        else pd.DataFrame()
     )
-    sla_df = pd.read_json(valid_sla_json, orient="records") if valid_sla_json else pd.DataFrame()
+    sla_df = (
+        pd.read_parquet(valid_sla_path)
+        if valid_sla_path and Path(valid_sla_path).exists()
+        else pd.DataFrame()
+    )
 
     engine = get_engine()
     sla_metrics = transform_sla_metrics(requests_df, sla_df)
@@ -131,9 +170,11 @@ def _compute_and_load_daily_volume(**context: object) -> None:
     Compute daily request volumes from validated data and load them into the analytics table.
     """
     ti = context["ti"]
-    valid_requests_json = ti.xcom_pull(task_ids="validate_and_quarantine", key="valid_requests")
+    valid_requests_path = ti.xcom_pull(task_ids="validate_and_quarantine", key="valid_requests_path")
     requests_df = (
-        pd.read_json(valid_requests_json, orient="records") if valid_requests_json else pd.DataFrame()
+        pd.read_parquet(valid_requests_path)
+        if valid_requests_path and Path(valid_requests_path).exists()
+        else pd.DataFrame()
     )
 
     engine = get_engine()
