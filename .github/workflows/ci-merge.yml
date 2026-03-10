@@ -22,6 +22,6 @@ jobs:
             build_image: true
             push_image: false
             run_data_tests: false
-            run_checkov: false
+            run_checkov: true
             deploy_dags: false
         secrets: inherit
