@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+
+<head>
+  <title>My Tickets</title>
+</head>
+
+<body>
+  <div th:fragment="content">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground" th:text="|Hello, ${userName}|">Hello</h2>
+      <p class="text-sm text-muted-foreground-1">Your service requests overview.</p>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+
+      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs flex items-center gap-4">
+        <div class="shrink-0 flex items-center justify-center size-11 rounded-xl bg-amber-50 text-amber-600">
+          <svg class="size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Open Requests</p>
+          <p class="text-3xl font-bold text-foreground leading-none mt-0.5" th:text="${myOpenCount} ?: '—'">—</p>
+        </div>
+      </div>
+
+      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs flex items-center gap-4">
+        <div class="shrink-0 flex items-center justify-center size-11 rounded-xl bg-green-50 text-green-600">
+          <svg class="size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved</p>
+          <p class="text-3xl font-bold text-foreground leading-none mt-0.5" th:text="${myResolvedCount} ?: '—'">—</p>
+        </div>
+      </div>
+
+      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs flex items-center gap-4">
+        <div class="shrink-0 flex items-center justify-center size-11 rounded-xl bg-blue-50 text-blue-600">
+          <svg class="size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+            <path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Total Submitted</p>
+          <p class="text-3xl font-bold text-foreground leading-none mt-0.5" th:text="${myTotalCount} ?: '—'">—</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- New Request CTA -->
+    <div class="bg-primary rounded-xl p-6 flex items-center justify-between mb-6 shadow-2xs">
+      <div>
+        <h3 class="text-lg font-bold text-primary-foreground">Need help with something?</h3>
+        <p class="text-sm text-primary-foreground/70 mt-0.5">Submit a new request and our team will get back to you.</p>
+      </div>
+      <a th:href="@{/requests/new}"
+         class="shrink-0 py-2 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg bg-card text-primary border border-card-line hover:bg-card-hover focus:outline-hidden focus:bg-card-focus disabled:opacity-50 disabled:pointer-events-none">
+        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+        New Request
+      </a>
+    </div>
+
+    <!-- Recent Requests Table -->
+    <div class="bg-card border border-card-line rounded-xl shadow-2xs">
+      <div class="px-5 py-4 border-b border-card-line">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 flex items-center gap-2">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Recent Requests
+        </h3>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${myRecentTickets == null or #lists.isEmpty(myRecentTickets)}"
+           class="flex flex-col items-center justify-center py-12 text-center">
+        <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+        </svg>
+        <p class="text-sm text-muted-foreground-1">No requests submitted yet.</p>
+        <a th:href="@{/requests/new}" class="mt-2 text-sm font-medium text-primary hover:underline">Submit your first request →</a>
+      </div>
+
+      <!-- Ticket rows -->
+      <div th:if="${myRecentTickets != null and not #lists.isEmpty(myRecentTickets)}">
+        <div th:each="t : ${myRecentTickets}"
+             class="flex items-center justify-between px-5 py-3.5 border-b border-card-line last:border-b-0 hover:bg-muted-hover transition-colors">
+          <div>
+            <p class="text-sm font-medium text-foreground" th:text="${t.title}"></p>
+            <p class="text-xs text-muted-foreground-2 mt-0.5">
+              <span th:text="${t.category}"></span> ·
+              <span th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></span>
+            </p>
+          </div>
+          <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+                th:classappend="${t.status == 'OPEN'}         ? 'bg-blue-50 text-blue-700'        :
+                                 (${t.status == 'ASSIGNED'}   ? 'bg-green-50 text-green-700'       :
+                                 (${t.status == 'IN_PROGRESS'}? 'bg-amber-50 text-amber-700'       :
+                                 (${t.status == 'RESOLVED'}   ? 'bg-green-50 text-green-700'       : 'bg-surface-1 text-muted-foreground-2')))"
+                th:text="${t.status}">
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+
+</html>
+

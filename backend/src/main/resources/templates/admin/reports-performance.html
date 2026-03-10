@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>Agent Performance Report</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">Agent Performance</h2>
+      <p class="text-sm text-muted-foreground-1">Weekly leaderboard and compliance summary for all agents.</p>
+    </div>
+
+    <div th:if="${leaderboard == null or #lists.isEmpty(leaderboard)}"
+         class="bg-card border border-card-line rounded-xl p-10 shadow-2xs flex flex-col items-center justify-center text-center">
+      <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+      <p class="text-sm text-muted-foreground-1">No performance data yet. The ETL pipeline runs at midnight UTC.</p>
+    </div>
+
+    <div th:if="${leaderboard != null and not #lists.isEmpty(leaderboard)}">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Leaderboard -->
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4">This Week's Leaderboard</h3>
+          <div th:each="a, aStat : ${leaderboard}"
+               class="flex items-center gap-3 py-3 border-b border-card-line last:border-b-0">
+            <div class="size-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                 th:classappend="${aStat.count == 1} ? 'bg-yellow-500' : (${aStat.count == 2} ? 'bg-slate-400' : (${aStat.count == 3} ? 'bg-amber-700' : 'bg-muted-foreground-2'))"
+                 th:text="${aStat.count}"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-foreground" th:text="${a.agentName}"></p>
+              <p class="text-xs text-muted-foreground-2"
+                 th:text="|${a.ticketsResolved} resolved - ${a.avgResolutionHours}h avg|"></p>
+            </div>
+            <span class="text-sm font-bold shrink-0"
+                  th:classappend="${a.slaComplianceRatePct >= 90} ? 'text-green-600' : (${a.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+                  th:text="|${a.slaComplianceRatePct}%|"></span>
+          </div>
+        </div>
+
+        <!-- Compliance chart -->
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4">SLA Compliance This Week</h3>
+          <canvas id="agentChart" height="220"></canvas>
+        </div>
+
+      </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+      "use strict";
+      const leaderboard = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${leaderboard}]]*/ null);
+      (function(){
+        if (typeof Chart === 'undefined' || !leaderboard.length) return;
+        const compliance = leaderboard.map(function(a){ return parseFloat(a.slaComplianceRatePct) || 0; });
+        new Chart(document.getElementById('agentChart'), {
+          type: 'bar',
+          data: { labels: leaderboard.map(function(a){ return a.agentName; }), datasets: [{ label: 'SLA Compliance %', data: compliance, backgroundColor: compliance.map(function(v){ return v >= 90 ? '#16a34a' : v >= 70 ? '#d97706' : '#dc2626'; }), borderRadius: 6, borderSkipped: false }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v){ return v + '%'; } } }, x: { grid: { display: false } } } },
+        });
+      })();
+    </script>
+
+  </div>
+</body>
+</html>
+

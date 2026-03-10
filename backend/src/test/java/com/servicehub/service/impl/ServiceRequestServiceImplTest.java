@@ -68,7 +68,7 @@ class ServiceRequestServiceImplTest {
         UUID departmentId = UUID.randomUUID();
         User requester = user(requesterId);
         Department department = department(departmentId, RequestCategory.IT_SUPPORT);
-        SlaPolicy slaPolicy = slaPolicy(RequestCategory.IT_SUPPORT, RequestPriority.HIGH, 8);
+        SlaPolicy slaPolicy = slaPolicy(RequestCategory.IT_SUPPORT, RequestPriority.HIGH);
 
         ServiceRequestUpsertRequest request = new ServiceRequestUpsertRequest();
         request.setTitle("  Laptop issue  ");
@@ -173,7 +173,7 @@ class ServiceRequestServiceImplTest {
         updateRequest.setStatus(RequestStatus.RESOLVED);
 
         Department routedDepartment = department(departmentId, RequestCategory.FACILITIES);
-        SlaPolicy slaPolicy = slaPolicy(RequestCategory.FACILITIES, RequestPriority.CRITICAL, 8);
+        SlaPolicy slaPolicy = slaPolicy(RequestCategory.FACILITIES, RequestPriority.CRITICAL);
 
         when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(existing));
         when(userRepository.findById(assigneeId)).thenReturn(Optional.of(user(assigneeId)));
@@ -249,7 +249,7 @@ class ServiceRequestServiceImplTest {
         User user = new User();
         user.setId(id);
         user.setEmail("user@amalitech.com");
-        user.setName("User");
+        user.setFullName("User");
         return user;
     }
 
@@ -261,12 +261,12 @@ class ServiceRequestServiceImplTest {
         return department;
     }
 
-    private SlaPolicy slaPolicy(RequestCategory category, RequestPriority priority, int resolutionHours) {
+    private SlaPolicy slaPolicy(RequestCategory category, RequestPriority priority) {
         SlaPolicy policy = new SlaPolicy();
         policy.setId(UUID.randomUUID());
         policy.setCategory(category);
         policy.setPriority(priority);
-        policy.setResolutionTimeHours(resolutionHours);
+        policy.setResolutionTimeHours(8);
         policy.setResponseTimeHours(1);
         return policy;
     }
