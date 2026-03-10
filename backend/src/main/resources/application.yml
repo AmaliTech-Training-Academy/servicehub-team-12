@@ -17,7 +17,7 @@ spring:
     show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   thymeleaf:
     prefix: classpath:/templates/
@@ -26,6 +26,25 @@ spring:
   sql:
     init:
       mode: always
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration: ${JWT_EXPIRATION:900000}              # 15 minutes in ms
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days in ms
 
 logging:
   level:
