@@ -9,7 +9,7 @@ def _requests_for_transformations() -> pd.DataFrame:
             {
                 "id": 1,
                 "title": "Reset password",
-                "category": "IT_SUPPORT",
+                "category": "IT",
                 "priority": "HIGH",
                 "status": "RESOLVED",
                 "sla_deadline": "2024-01-01T14:00:00Z",
@@ -37,7 +37,7 @@ def _requests_for_transformations() -> pd.DataFrame:
 def _sla_policies() -> pd.DataFrame:
     return pd.DataFrame(
         [
-            {"id": 1, "category": "IT_SUPPORT", "priority": "HIGH"},
+            {"id": 1, "category": "IT", "priority": "HIGH"},
             {"id": 2, "category": "FACILITIES", "priority": "LOW"},
         ]
     )

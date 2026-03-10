@@ -19,20 +19,19 @@ x-airflow-common:
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
-    SERVICEHUB_DE_ROOT: /opt/servicehub-data
+    PYTHONPATH: /opt/airflow
     DB_HOST: postgres
     DB_PORT: "5432"
     DB_NAME: ${POSTGRES_DB}
     DB_USER: ${POSTGRES_USER}
     DB_PASSWORD: ${POSTGRES_PASSWORD}
     LOG_LEVEL: INFO
-    APP_ENV: ${APP_ENV:-development}
   volumes:
     - ./data-engineering/dags:/opt/airflow/dags
     - airflow_logs:/opt/airflow/logs
     - ./data-engineering/config:/opt/airflow/config
     - ./data-engineering/plugins:/opt/airflow/plugins
-    - ./data-engineering:/opt/servicehub-data
+    - ./data-engineering:/opt/airflow
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -53,7 +52,7 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
+      - ./data-engineering/postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s

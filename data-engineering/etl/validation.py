@@ -23,7 +23,7 @@ REQUIRED_REQUEST_COLUMNS: List[str] = [
 ]
 
 ALLOWED_CATEGORIES: Iterable[str] = {"IT_SUPPORT", "FACILITIES", "HR_REQUEST"}
-ALLOWED_PRIORITIES: Iterable[str] = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
+ALLOWED_PRIORITIES: Iterable[str] = {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
 ALLOWED_STATUSES: Iterable[str] = {
     "OPEN",
     "ASSIGNED",
@@ -147,4 +147,3 @@ def validate_and_split_sla_policies(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.
     invalid_df = working[invalid_mask].copy()
 
     return valid_df, invalid_df
-
