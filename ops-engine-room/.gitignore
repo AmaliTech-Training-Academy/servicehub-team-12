@@ -46,6 +46,7 @@ terraform.rc
 # planout
 
 #keys
-/infrastructure/stagging-environment/whoami-service-dev-key
-/infrastructure/stagging-environment/whoami-service-dev-key.pub
+infrastructure/staging-environment/servicehub-dev-key
+infrastructure/staging-environment/servicehub-dev-key.pub
 proj-amali-cli_accessKeys.csv
+
