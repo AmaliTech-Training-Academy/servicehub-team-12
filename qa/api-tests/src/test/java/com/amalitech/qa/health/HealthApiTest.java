@@ -11,11 +11,7 @@ import static org.hamcrest.Matchers.*;
 
 public class HealthApiTest {
 
-    @BeforeClass
-    public void setup() {
-        Dotenv dotenv = Dotenv.configure().directory("../../").load();
-        RestAssured.baseURI = dotenv.get("BASE_URL");
-    }
+
 
     //    Testing to confirm if the health endpoint returns 200 status code
     @Test
