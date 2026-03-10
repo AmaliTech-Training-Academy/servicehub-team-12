@@ -1,6 +1,7 @@
 package com.servicehub.controller.view;
 
 import com.servicehub.model.User;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,25 +27,38 @@ public class DashboardController {
         return "redirect:/dashboard/user";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER')")
     @GetMapping("/user")
-    public String userDashboard(Model model) {
-        model.addAttribute("userRole", "USER");
+    public String userDashboard(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "USER");
+        if (principal != null) {
+            model.addAttribute("currentUserName", principal.getFullName());
+        }
         model.addAttribute("myOpenCount", 0);
         model.addAttribute("myResolvedCount", 0);
         model.addAttribute("myTickets", Collections.emptyList());
         return "dashboard/user";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     @GetMapping("/agent")
-    public String agentDashboard(Model model) {
-        model.addAttribute("userRole", "AGENT");
+    public String agentDashboard(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "AGENT");
+        if (principal != null) {
+            model.addAttribute("currentUserName", principal.getFullName());
+        }
         model.addAttribute("currentWeek", Collections.emptyList());
         return "dashboard/agent";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
-    public String adminDashboard(Model model) {
+    public String adminDashboard(Model model, @AuthenticationPrincipal User principal) {
         model.addAttribute("userRole", "ADMIN");
+        if (principal != null) {
+            model.addAttribute("currentUserName", principal.getFullName());
+            model.addAttribute("currentUserEmail", principal.getEmail());
+        }
 
         // KPI headline numbers
         model.addAttribute("totalTickets", 0);

@@ -11,11 +11,16 @@ public interface ServiceRequestService {
 
     List<ServiceRequestResponse> findAll();
 
-    List<ServiceRequestResponse> findAllByRequesterId(UUID requesterId);
+    /** Returns only tickets where the requester matches userId. */
+    List<ServiceRequestResponse> findAllByRequesterId(UUID userId);
 
     ServiceRequestResponse findById(UUID id);
+
+    /** Returns the ticket only if it belongs to userId; throws 403 otherwise. */
+    ServiceRequestResponse findByIdForUser(UUID id, UUID userId);
 
     ServiceRequestResponse update(UUID id, ServiceRequestUpsertRequest request);
 
     void delete(UUID id);
 }
+

@@ -1,16 +1,14 @@
 package com.servicehub.controller.view;
 
 import com.servicehub.dto.ServiceRequestForm;
-import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.mapper.ServiceRequestMapper;
-import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.User;
-import com.servicehub.repository.UserRepository;
 import com.servicehub.service.ServiceRequestService;
-import java.security.Principal;
 import java.util.Collections;
-import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -24,46 +22,53 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class RequestController {
 
     private final ServiceRequestService serviceRequestService;
-    private final UserRepository userRepository;
     private final ServiceRequestMapper serviceRequestMapper;
 
     // ── USER: My Requests ────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER')")
     @GetMapping
-    @SuppressWarnings("unused")
     public String myRequests(Model model,
-            Principal principal,
+            @AuthenticationPrincipal User principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status) {
-        model.addAttribute("userRole", "USER");
-        model.addAttribute("tickets", getCurrentUserRequests(principal, q, status));
+        String role = principal != null ? principal.getRole().name() : "USER";
+        model.addAttribute("userRole", role);
+        if (principal != null) {
+            model.addAttribute("currentUserName", principal.getFullName());
+            model.addAttribute("tickets",
+                    serviceRequestService.findAllByRequesterId(principal.getId()));
+        } else {
+            model.addAttribute("tickets", Collections.emptyList());
+        }
         return "requests/list";
     }
 
     // ── USER: New Request form ───────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER')")
     @GetMapping("/new")
-    public String newRequestForm(Model model) {
-        model.addAttribute("userRole", "USER");
+    public String newRequestForm(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "USER");
         model.addAttribute("formData", new ServiceRequestForm());
         return "requests/new";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER')")
     @PostMapping("/new")
     public String submitRequest(
             @ModelAttribute("formData") @Validated ServiceRequestForm form,
             BindingResult bindingResult,
-            Principal principal,
+            @AuthenticationPrincipal User principal,
             Model model,
             RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("userRole", "USER");
+            model.addAttribute("userRole", principal != null ? principal.getRole().name() : "USER");
             return "requests/new";
         }
 
-        var requesterId = principal == null ? null
-                : userRepository.findByEmail(principal.getName()).map(User::getId).orElse(null);
+        UUID requesterId = principal == null ? null : principal.getId();
 
         if (requesterId == null) {
             model.addAttribute("error", "Could not identify the logged-in user. Please log in and try again.");
@@ -72,81 +77,59 @@ public class RequestController {
         }
 
         try {
-            var req = serviceRequestMapper.toCreateRequest(form, requesterId);
-            serviceRequestService.create(req);
+            serviceRequestService.create(serviceRequestMapper.toCreateRequest(form, requesterId));
             redirectAttributes.addFlashAttribute("success", "Your request has been submitted successfully.");
             return "redirect:/requests/new";
         } catch (Exception e) {
             model.addAttribute("error", "Something went wrong while submitting your request. Please try again.");
-            model.addAttribute("userRole", "USER");
+            model.addAttribute("userRole", principal.getRole().name());
             return "requests/new";
         }
     }
 
     // ── USER: Request History ────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER')")
     @GetMapping("/history")
-    public String requestHistory(Model model) {
-        model.addAttribute("userRole", "USER");
-        model.addAttribute("history", Collections.emptyList());
+    public String requestHistory(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "USER");
+        if (principal != null) {
+            model.addAttribute("history",
+                    serviceRequestService.findAllByRequesterId(principal.getId()));
+        } else {
+            model.addAttribute("history", Collections.emptyList());
+        }
         return "requests/history";
     }
 
     // ── AGENT: Assigned Tickets ──────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     @GetMapping("/assigned")
-    @SuppressWarnings("unused")
     public String assignedTickets(Model model,
+            @AuthenticationPrincipal User principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String priority) {
-        model.addAttribute("userRole", "AGENT");
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "AGENT");
         model.addAttribute("assignedTickets", Collections.emptyList());
         return "requests/assigned";
     }
 
     // ── AGENT: Open Queue ────────────────────────────────────────
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     @GetMapping("/open")
-    public String openQueue(Model model) {
-        model.addAttribute("userRole", "AGENT");
+    public String openQueue(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "AGENT");
         model.addAttribute("openTickets", Collections.emptyList());
         return "requests/open";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     @PostMapping("/{id}/assign")
-    @SuppressWarnings("unused")
     public String pickUpTicket(@PathVariable Long id,
             RedirectAttributes redirectAttributes) {
-        // TODO: assign ticket to current agent via service layer
         redirectAttributes.addFlashAttribute("success", "Ticket picked up successfully.");
         return "redirect:/requests/assigned";
-    }
-
-    private List<ServiceRequestResponse> getCurrentUserRequests(Principal principal, String q, String status) {
-        var requesterId = userRepository.findByEmail(principal.getName()).map(User::getId).orElse(null);
-        if (requesterId == null) {
-            return Collections.emptyList();
-        }
-
-        String normalizedQuery = q == null ? "" : q.trim().toLowerCase();
-        RequestStatus requestedStatus = parseStatus(status);
-
-        return serviceRequestService.findAllByRequesterId(requesterId).stream()
-                .filter(ticket -> normalizedQuery.isBlank()
-                        || (ticket.getTitle() != null && ticket.getTitle().toLowerCase().contains(normalizedQuery)))
-                .filter(ticket -> requestedStatus == null || ticket.getStatus() == requestedStatus)
-                .toList();
-    }
-
-    private RequestStatus parseStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return null;
-        }
-
-        try {
-            return RequestStatus.valueOf(status.trim().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
     }
 }
