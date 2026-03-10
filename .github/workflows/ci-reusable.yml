@@ -96,22 +96,26 @@ jobs:
             - name: Install dependencies
               working-directory: data-engineering
               run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements.txt
-                  pip install flake8 pytest
+                  curl -LsSf https://astral.sh/uv/install.sh | sh
+                  $HOME/.cargo/bin/uv venv
+                  source .venv/bin/activate
+                  $HOME/.cargo/bin/uv pip install -r requirements.txt
+                  $HOME/.cargo/bin/uv pip install flake8 pytest
 
             - name: Lint with flake8
               working-directory: data-engineering
               run: |
+                  source .venv/bin/activate
                   # stop the build if there are Python syntax errors or undefined names
                   flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
                   # exit-zero treats all errors as warnings
                   flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-            # We can run pytest here if tests are present
-            # - name: Run tests
-            #   working-directory: data-engineering
-            #   run: pytest
+            - name: Run tests
+              working-directory: data-engineering
+              run: |
+                  source .venv/bin/activate
+                  PYTHONPATH=. pytest
 
     test:
         permissions:

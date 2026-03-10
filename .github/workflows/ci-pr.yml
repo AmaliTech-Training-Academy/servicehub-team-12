@@ -24,6 +24,6 @@ jobs:
             run_checkstyle: true
             run_tests: true
             build_image: false
-            run_data_tests: false
+            run_data_tests: true
             run_checkov: true            
         secrets: inherit
