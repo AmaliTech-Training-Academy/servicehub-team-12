@@ -1,2 +1,2 @@
-CREATE DATABASE airflow OWNER postgres;
+CREATE DATABASE airflow OWNER servicehub;
 
