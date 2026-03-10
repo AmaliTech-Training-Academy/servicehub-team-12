@@ -6,7 +6,7 @@ import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
-import com.servicehub.model.enums.UserRole;
+import com.servicehub.model.enums.Role;
 import com.servicehub.service.impl.WorkflowServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +48,6 @@ class WorkflowServiceTest {
         testRequest.setUpdatedAt(OffsetDateTime.now());
     }
 
-    // ---- VALID TRANSITIONS ----
 
     @Test
     @DisplayName("OPEN -> ASSIGNED")
@@ -70,7 +69,7 @@ class WorkflowServiceTest {
         User assignedAgent = new User();
         assignedAgent.setId(UUID.randomUUID());
         assignedAgent.setEmail("agent@example.com");
-        assignedAgent.setRole(UserRole.AGENT);
+        assignedAgent.setRole(Role.AGENT);
         testRequest.setAssignedTo(assignedAgent);
 
         mockFindRequest();
@@ -87,7 +86,7 @@ class WorkflowServiceTest {
         User assignedAgent = new User();
         assignedAgent.setId(UUID.randomUUID());
         assignedAgent.setEmail("agent@example.com");
-        assignedAgent.setRole(UserRole.AGENT);
+        assignedAgent.setRole(Role.AGENT);
         testRequest.setAssignedTo(assignedAgent);
         mockFindRequest();
 
