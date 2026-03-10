@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>Users</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">All Users</h2>
+      <p class="text-sm text-muted-foreground-1">Manage all registered users in the system.</p>
+    </div>
+
+    <!-- Success / error banners -->
+    <div th:if="${success}" class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span th:text="${success}"></span>
+    </div>
+    <div th:if="${error}" class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      <span th:text="${error}"></span>
+    </div>
+
+    <!-- Search -->
+    <div class="bg-card border border-card-line rounded-xl shadow-2xs mb-4">
+      <form th:action="@{/admin/users}" method="get" class="flex gap-3 p-4 items-end">
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-muted-foreground-2 mb-1">Search</label>
+          <input type="text" name="q" th:value="${param.q}" placeholder="Name or email..."
+                 class="py-2 px-3 block w-full bg-background border border-card-line rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-muted-foreground-2 mb-1">Role</label>
+          <select name="role" class="py-2 px-3 block bg-background border border-card-line rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition">
+            <option value="">All roles</option>
+            <option value="USER"  th:selected="${param.role == 'USER'}">User</option>
+            <option value="AGENT" th:selected="${param.role == 'AGENT'}">Agent</option>
+            <option value="ADMIN" th:selected="${param.role == 'ADMIN'}">Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="py-2 px-4 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover transition">Search</button>
+      </form>
+    </div>
+
+    <div class="bg-card border border-card-line rounded-xl shadow-2xs">
+
+      <div th:if="${users == null or #lists.isEmpty(users)}"
+           class="flex flex-col items-center justify-center py-16 text-center">
+        <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <p class="text-sm text-muted-foreground-1">No users found.</p>
+      </div>
+
+      <div th:if="${users != null and not #lists.isEmpty(users)}" class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-card-line">
+          <thead class="bg-muted-hover">
+            <tr>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Name</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Email</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Department</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Role</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Joined</th>
+              <th class="px-5 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-card-line">
+            <tr th:each="u : ${users}" class="hover:bg-muted-hover transition-colors">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="shrink-0 flex items-center justify-center size-8 rounded-full bg-primary text-primary-foreground text-xs font-bold select-none"
+                       th:text="${#strings.toUpperCase(#strings.substring(u.firstName,0,1) + #strings.substring(u.lastName,0,1))}">JD</div>
+                  <p class="text-sm font-medium text-foreground" th:text="|${u.firstName} ${u.lastName}|"></p>
+                </div>
+              </td>
+              <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${u.email}"></td>
+              <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${u.department} ?: '—'"></td>
+              <td class="px-5 py-3.5">
+                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+                      th:classappend="${u.role == 'ADMIN'} ? 'bg-red-50 text-red-700'    :
+                                       (${u.role == 'AGENT'} ? 'bg-blue-50 text-blue-700' : 'bg-surface-1 text-muted-foreground-2')"
+                      th:text="${u.role}"></span>
+              </td>
+              <td class="px-5 py-3.5 text-sm text-muted-foreground-1"
+                  th:text="${#temporals.format(u.createdAt, 'dd MMM yyyy')}"></td>
+              <td class="px-5 py-3.5 text-right flex items-center justify-end gap-3">
+                <a th:href="@{/admin/users/{id}(id=${u.id})}"
+                   class="text-xs font-medium text-primary hover:underline">Edit</a>
+                <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post"
+                      onsubmit="return confirm('Delete this user?')">
+                  <button type="submit" class="text-xs font-medium text-red-600 hover:underline">Delete</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>
+

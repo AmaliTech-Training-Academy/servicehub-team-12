@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>My Profile</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">My Profile</h2>
+      <p class="text-sm text-muted-foreground-1">Manage your personal details and password.</p>
+    </div>
+
+    <!-- Success / error banners -->
+    <div th:if="${success}"
+         class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span th:text="${success}">Profile updated.</span>
+    </div>
+    <div th:if="${error}"
+         class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+      </svg>
+      <span th:text="${error}">Update failed.</span>
+    </div>
+
+    <div class="max-w-2xl space-y-6">
+
+      <!-- Avatar + name banner -->
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs p-6 flex items-center gap-5">
+        <div class="shrink-0 flex items-center justify-center size-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold select-none"
+             th:text="${#strings.toUpperCase(#strings.substring(profileUser.firstName, 0, 1) + #strings.substring(profileUser.lastName, 0, 1))}">
+          JD
+        </div>
+        <div>
+          <p class="text-lg font-semibold text-foreground" th:text="|${profileUser.firstName} ${profileUser.lastName}|">Jane Doe</p>
+          <p class="text-sm text-muted-foreground-1" th:text="${profileUser.email}">jane@company.com</p>
+          <span class="inline-flex items-center mt-1 py-0.5 px-2 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 uppercase tracking-wide"
+                th:text="${profileUser.role}">USER</span>
+        </div>
+      </div>
+
+      <!-- Personal details form -->
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs p-6">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-5">Personal Details</h3>
+        <form th:action="@{/profile}" method="post" class="space-y-4">
+          <input type="hidden" name="_method" value="put" />
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="firstName" class="block text-sm font-medium text-foreground mb-1.5">First name</label>
+              <input type="text" id="firstName" name="firstName" required
+                     th:value="${profileUser.firstName}"
+                     class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            </div>
+            <div>
+              <label for="lastName" class="block text-sm font-medium text-foreground mb-1.5">Last name</label>
+              <input type="text" id="lastName" name="lastName" required
+                     th:value="${profileUser.lastName}"
+                     class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            </div>
+          </div>
+
+          <div>
+            <label for="email" class="block text-sm font-medium text-foreground mb-1.5">Email address</label>
+            <input type="email" id="email" name="email" required
+                   th:value="${profileUser.email}"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+
+          <div>
+            <label for="department" class="block text-sm font-medium text-foreground mb-1.5">Department</label>
+            <input type="text" id="department" name="department"
+                   th:value="${profileUser.department}"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+
+          <div class="pt-1">
+            <button type="submit"
+                    class="py-2.5 px-5 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg bg-primary border border-primary-line text-primary-foreground hover:bg-primary-hover focus:outline-hidden focus:bg-primary-focus transition">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Change password form -->
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs p-6">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-5">Change Password</h3>
+        <form th:action="@{/profile/password}" method="post" class="space-y-4">
+          <div>
+            <label for="currentPassword" class="block text-sm font-medium text-foreground mb-1.5">Current password</label>
+            <input type="password" id="currentPassword" name="currentPassword" required
+                   placeholder="••••••••"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+          <div>
+            <label for="newPassword" class="block text-sm font-medium text-foreground mb-1.5">New password</label>
+            <input type="password" id="newPassword" name="newPassword" required
+                   placeholder="Min. 8 characters"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+          <div>
+            <label for="confirmPassword" class="block text-sm font-medium text-foreground mb-1.5">Confirm new password</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required
+                   placeholder="Re-enter new password"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+          <div class="pt-1">
+            <button type="submit"
+                    class="py-2.5 px-5 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg bg-primary border border-primary-line text-primary-foreground hover:bg-primary-hover focus:outline-hidden focus:bg-primary-focus transition">
+              Update Password
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>
+

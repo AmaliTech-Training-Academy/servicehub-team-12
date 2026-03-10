@@ -1,29 +1,32 @@
-//package com.servicehub.service;
-//
-//import com.servicehub.dto.*;
-//import com.servicehub.model.User;
-//import com.servicehub.model.enums.Role;
-//import com.servicehub.repository.UserRepository;
-//import io.jsonwebtoken.Jwts;
-//import io.jsonwebtoken.security.Keys;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.beans.factory.annotation.Value;
-//import org.springframework.security.crypto.password.PasswordEncoder;
-//import org.springframework.stereotype.Service;
-//import javax.crypto.SecretKey;
-//import java.nio.charset.StandardCharsets;
-//import java.util.Date;
-//
-//@Service
-//@RequiredArgsConstructor
-//public class AuthService {
-//
-////    private final UserRepository userRepository;
-////    private final PasswordEncoder passwordEncoder;
-////    private String jwtSecret;
-////    private Long jwtExpiration;
-////    @Value("${jwt.secret}")
-////    // configured above
-////    @Value("${jwt.expiration}")
-////    // configured above
-//}
+package com.servicehub.service;
+
+import com.servicehub.dto.AuthRequest;
+import com.servicehub.dto.AuthResponse;
+import com.servicehub.dto.RefreshTokenRequest;
+import com.servicehub.dto.RegisterRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public interface AuthService {
+
+    /** Register a new local user and return tokens. */
+    AuthResponse register(RegisterRequest request);
+
+    /** Authenticate with email + password and return tokens. */
+    AuthResponse login(AuthRequest request);
+
+    /**
+     * Rotate a refresh token: validate the old one, revoke it,
+     * issue a new access token + refresh token pair.
+     */
+    AuthResponse refresh(RefreshTokenRequest request);
+
+    /**
+     * Blacklist the current access token and revoke all refresh tokens
+     * for the authenticated user.
+     */
+    void logout(HttpServletRequest request);
+
+    /** Writes a secure HttpOnly JWT cookie onto the HTTP response. */
+    void issueJwtCookie(AuthResponse authResponse, HttpServletResponse response);
+}
