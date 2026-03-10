@@ -1,13 +1,8 @@
 package com.servicehub.controller;
 
-import com.servicehub.dto.ServiceRequestResponse;
-import com.servicehub.mapper.ServiceRequestMapper;
-import com.servicehub.model.ServiceRequest;
-import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

@@ -3,7 +3,6 @@ package com.servicehub.controller;
 import com.servicehub.exception.InvalidTransitionException;
 import com.servicehub.exception.GlobalExceptionHandler;
 import com.servicehub.service.WorkflowService;
-import com.servicehub.service.ServiceRequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,9 +33,6 @@ class WorkflowControllerTest {
     @Mock
     private WorkflowService workflowService;
 
-    @Mock
-    private ServiceRequestService serviceRequestService;
-
     @InjectMocks
     private WorkflowController workflowController;
 
@@ -45,8 +41,6 @@ class WorkflowControllerTest {
     @BeforeEach
     void setUp() {
 
-        // Register the application's GlobalExceptionHandler so controller exceptions
-        // (like InvalidTransitionException) are translated to proper HTTP responses
         mockMvc = MockMvcBuilders
                 .standaloneSetup(workflowController)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -94,7 +88,6 @@ class WorkflowControllerTest {
 
         mockMvc.perform(post("/api/workflow/requests/{requestId}/transition", testRequestId)
                         .contentType(MediaType.APPLICATION_JSON))
-                // The application's GlobalExceptionHandler maps InvalidTransitionException -> 400 Bad Request
                 .andExpect(status().isBadRequest());
 
         verify(workflowService).transitionStatus(testRequestId);
