@@ -8,4 +8,6 @@ import org.mapstruct.Mapper;
 public interface ServiceRequestMapper {
 
     ServiceRequest toEntity(ServiceRequestResponse serviceRequestResponse);
+
+    ServiceRequestResponse toDto(ServiceRequest serviceRequest);
 }
