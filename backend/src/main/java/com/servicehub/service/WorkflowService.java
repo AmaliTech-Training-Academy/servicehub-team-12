@@ -41,7 +41,7 @@ public interface WorkflowService {
     
     /**
      * Validates workflow rules before transition
-     * @param request the service request
+     * @param serviceRequest the service request
      * @param newStatus the new status
      * @throws InvalidTransitionException if validation fails
      */

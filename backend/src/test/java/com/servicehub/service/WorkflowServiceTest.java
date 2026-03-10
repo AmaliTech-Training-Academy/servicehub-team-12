@@ -2,7 +2,6 @@ package com.servicehub.service;
 
 import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.exception.InvalidTransitionException;
-import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
