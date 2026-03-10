@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>New Request</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">New Request</h2>
+      <p class="text-sm text-muted-foreground-1">Submit a new service request and we'll assign it to the right team.</p>
+    </div>
+
+    <!-- Success banner -->
+    <div th:if="${success}"
+         class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span th:text="${success}">Request submitted successfully.</span>
+    </div>
+
+    <!-- Error banner -->
+    <div th:if="${error}"
+         class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+      </svg>
+      <span th:text="${error}">Something went wrong.</span>
+    </div>
+
+    <div class="max-w-2xl">
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs p-6">
+        <form th:action="@{/requests/new}" method="post" class="space-y-5">
+
+          <div>
+            <label for="title" class="block text-sm font-medium text-foreground mb-1.5">Title <span class="text-red-500">*</span></label>
+            <input type="text" id="title" name="title" required
+                   placeholder="Brief description of the issue"
+                   th:value="${formData?.title}"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground placeholder:text-muted-foreground-2 focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="category" class="block text-sm font-medium text-foreground mb-1.5">Category <span class="text-red-500">*</span></label>
+              <select id="category" name="category" required
+                      class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition">
+                <option value="">Select a category</option>
+                <option value="IT"          th:selected="${formData?.category == 'IT'}">IT</option>
+                <option value="HR"          th:selected="${formData?.category == 'HR'}">HR</option>
+                <option value="Finance"     th:selected="${formData?.category == 'Finance'}">Finance</option>
+                <option value="Facilities"  th:selected="${formData?.category == 'Facilities'}">Facilities</option>
+                <option value="Other"       th:selected="${formData?.category == 'Other'}">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="priority" class="block text-sm font-medium text-foreground mb-1.5">Priority <span class="text-red-500">*</span></label>
+              <select id="priority" name="priority" required
+                      class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition">
+                <option value="">Select priority</option>
+                <option value="LOW"      th:selected="${formData?.priority == 'LOW'}">Low</option>
+                <option value="MEDIUM"   th:selected="${formData?.priority == 'MEDIUM'}">Medium</option>
+                <option value="HIGH"     th:selected="${formData?.priority == 'HIGH'}">High</option>
+                <option value="CRITICAL" th:selected="${formData?.priority == 'CRITICAL'}">Critical</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="description" class="block text-sm font-medium text-foreground mb-1.5">Description <span class="text-red-500">*</span></label>
+            <textarea id="description" name="description" rows="5" required
+                      placeholder="Describe the issue in detail — include any error messages, steps to reproduce, and impact..."
+                      class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground placeholder:text-muted-foreground-2 focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition resize-none"
+                      th:text="${formData?.description}"></textarea>
+          </div>
+
+          <div class="flex items-center gap-3 pt-1">
+            <button type="submit"
+                    class="py-2.5 px-5 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg bg-primary border border-primary-line text-primary-foreground hover:bg-primary-hover focus:outline-hidden focus:bg-primary-focus disabled:opacity-50 disabled:pointer-events-none transition">
+              <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+              </svg>
+              Submit Request
+            </button>
+            <a th:href="@{/requests}"
+               class="py-2.5 px-5 inline-flex items-center text-sm font-medium rounded-lg border border-card-line text-muted-foreground-1 hover:bg-muted-hover focus:outline-hidden transition">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
+

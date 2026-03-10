@@ -1,0 +1,16 @@
+/*
+  Global stylesheet entry point.
+  Import npm CSS packages here (e.g. Tailwind, Preline).
+  This file is compiled by Vite and served as /assets/main.css to all Thymeleaf pages.
+*/
+@import "tailwindcss";
+/* Preline UI */
+@source "../node_modules/preline/dist/*.js";
+@source "../../backend/src/main/resources/templates/**/*.html";
+@import "../node_modules/preline/variants.css";
+
+/* Plugins */
+@plugin "@tailwindcss/forms";
+
+/* Preline Themes */
+@import "../node_modules/preline/css/themes/theme.css";

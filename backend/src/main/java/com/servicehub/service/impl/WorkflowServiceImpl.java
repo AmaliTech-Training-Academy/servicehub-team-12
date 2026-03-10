@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.service.ServiceRequestService;
