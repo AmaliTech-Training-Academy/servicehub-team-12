@@ -3,10 +3,7 @@ package com.servicehub.service;
 import java.util.List;
 import java.util.UUID;
 
-import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.exception.InvalidTransitionException;
-import com.servicehub.exception.ResourceNotFoundException;
-import com.servicehub.exception.UnauthorizedException;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.enums.RequestStatus;
 
@@ -27,8 +24,6 @@ public interface WorkflowService {
      * @param newStatus the new status to transition to
      * @return the updated ServiceRequest
      * @throws InvalidTransitionException if transition is not allowed
-     * @throws ResourceNotFoundException if request not found
-     * @throws UnauthorizedException if user doesn't have permission
      */
     void transitionStatus(UUID requestId, RequestStatus newStatus);
     
