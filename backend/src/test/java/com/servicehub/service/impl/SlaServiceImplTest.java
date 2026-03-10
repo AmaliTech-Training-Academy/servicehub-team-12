@@ -90,9 +90,7 @@ class SlaServiceImplTest {
           RequestCategory.IT_SUPPORT, RequestPriority.CRITICAL))
           .thenReturn(Optional.empty());
 
-      assertThrows(SlaPolicyNotFoundException.class, () -> {
-          slaService.calculateAndSetSlaDeadline(testRequest);
-      });
+      assertThrows(SlaPolicyNotFoundException.class, () -> slaService.calculateAndSetSlaDeadline(testRequest));
   }
 
   @Test
