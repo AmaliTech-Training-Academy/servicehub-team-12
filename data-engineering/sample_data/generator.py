@@ -4,14 +4,11 @@ Sample data generator for ServiceHub source tables.
 The generator seeds the transactional tables needed by the ETL:
 - departments
 - users
-- sla_policies
 - service_requests
 
 It follows the data contract distributions while remaining tolerant of minor
 schema drift between contract revisions and the current database tables.
 """
-
-from __future__ import annotations
 
 import random
 from dataclasses import dataclass
@@ -33,6 +30,26 @@ SERVICE_CATEGORIES = ["IT_SUPPORT", "FACILITIES", "HR_REQUEST"]
 PRIORITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
 STATUSES = ["OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"]
 
+# Default SLA policy timings (hours) aligned with backend seed data.
+# Keys are (category, priority) -> (response_time_hours, resolution_time_hours).
+SLA_POLICY_DEFAULTS: dict[tuple[str, str], tuple[int, int]] = {
+    # IT
+    ("IT_SUPPORT", "CRITICAL"): (1, 4),
+    ("IT_SUPPORT", "HIGH"): (2, 8),
+    ("IT_SUPPORT", "MEDIUM"): (4, 24),
+    ("IT_SUPPORT", "LOW"): (8, 48),
+    # Facilities
+    ("FACILITIES", "CRITICAL"): (1, 8),
+    ("FACILITIES", "HIGH"): (2, 16),
+    ("FACILITIES", "MEDIUM"): (4, 48),
+    ("FACILITIES", "LOW"): (8, 96),
+    # HR
+    ("HR_REQUEST", "CRITICAL"): (2, 8),
+    ("HR_REQUEST", "HIGH"): (4, 24),
+    ("HR_REQUEST", "MEDIUM"): (8, 72),
+    ("HR_REQUEST", "LOW"): (24, 168),
+}
+
 DEPARTMENT_SPECS = {
     "IT_SUPPORT": {
         "name": "IT Support",
@@ -51,20 +68,6 @@ DEPARTMENT_SPECS = {
     },
 }
 
-SLA_POLICY_RULES = {
-    ("IT_SUPPORT", "CRITICAL"): {"response_time_hours": 1, "resolution_time_hours": 4},
-    ("IT_SUPPORT", "HIGH"): {"response_time_hours": 2, "resolution_time_hours": 8},
-    ("IT_SUPPORT", "MEDIUM"): {"response_time_hours": 4, "resolution_time_hours": 24},
-    ("IT_SUPPORT", "LOW"): {"response_time_hours": 8, "resolution_time_hours": 72},
-    ("FACILITIES", "CRITICAL"): {"response_time_hours": 1, "resolution_time_hours": 8},
-    ("FACILITIES", "HIGH"): {"response_time_hours": 2, "resolution_time_hours": 16},
-    ("FACILITIES", "MEDIUM"): {"response_time_hours": 4, "resolution_time_hours": 48},
-    ("FACILITIES", "LOW"): {"response_time_hours": 8, "resolution_time_hours": 96},
-    ("HR_REQUEST", "CRITICAL"): {"response_time_hours": 2, "resolution_time_hours": 8},
-    ("HR_REQUEST", "HIGH"): {"response_time_hours": 4, "resolution_time_hours": 24},
-    ("HR_REQUEST", "MEDIUM"): {"response_time_hours": 8, "resolution_time_hours": 72},
-    ("HR_REQUEST", "LOW"): {"response_time_hours": 24, "resolution_time_hours": 168},
-}
 
 AGENT_NAMES = [
     "Ama Mensah",
@@ -218,23 +221,6 @@ def _build_local_users(config: SampleConfig, departments_df: pd.DataFrame) -> pd
     return pd.DataFrame(rows)
 
 
-def _build_local_sla_policies() -> pd.DataFrame:
-    now = _utcnow()
-    rows = []
-    for (category, priority), policy in SLA_POLICY_RULES.items():
-        rows.append(
-            {
-                "id": uuid4(),
-                "category": category,
-                "priority": priority,
-                "response_time_hours": policy["response_time_hours"],
-                "resolution_time_hours": policy["resolution_time_hours"],
-                "created_at": now,
-            }
-        )
-    return pd.DataFrame(rows)
-
-
 def _choose_title(category: str) -> str:
     return random.choice(TITLE_TEMPLATES[category])
 
@@ -337,95 +323,25 @@ def _ensure_users(engine: Engine, departments_df: pd.DataFrame, config: SampleCo
     return pd.DataFrame(rows)
 
 
-def ensure_sla_policies(engine: Engine) -> pd.DataFrame:
-    """
-    Ensure SLA policies exist and reflect the current data contract.
-    """
-    columns = _table_columns(engine, "sla_policies")
-    now = _utcnow()
-    rows = []
-
-    with engine.begin() as conn:
-        for (category, priority), policy in SLA_POLICY_RULES.items():
-            existing = conn.execute(
-                text(
-                    """
-                    SELECT id
-                    FROM sla_policies
-                    WHERE category = :category AND priority = :priority
-                    LIMIT 1
-                    """
-                ),
-                {"category": category, "priority": priority},
-            ).mappings().first()
-
-            if existing is None:
-                policy_row = _filter_row_for_columns(
-                    {
-                        "category": category,
-                        "priority": priority,
-                        "response_time_hours": policy["response_time_hours"],
-                        "resolution_time_hours": policy["resolution_time_hours"],
-                        "created_at": now,
-                    },
-                    columns,
-                )
-                policy_id = _insert_row(conn, "sla_policies", policy_row)
-            else:
-                policy_id = existing["id"]
-                update_parts = []
-                params: Dict[str, Any] = {
-                    "id": policy_id,
-                    "response_time_hours": policy["response_time_hours"],
-                    "resolution_time_hours": policy["resolution_time_hours"],
-                }
-                if "response_time_hours" in columns:
-                    update_parts.append("response_time_hours = :response_time_hours")
-                if "resolution_time_hours" in columns:
-                    update_parts.append("resolution_time_hours = :resolution_time_hours")
-                if update_parts:
-                    conn.execute(
-                        text(
-                            f"UPDATE sla_policies SET {', '.join(update_parts)} WHERE id = :id"
-                        ),
-                        params,
-                    )
-
-            rows.append(
-                {
-                    "id": policy_id,
-                    "category": category,
-                    "priority": priority,
-                    "response_time_hours": policy["response_time_hours"],
-                    "resolution_time_hours": policy["resolution_time_hours"],
-                }
-            )
-
-    logger.info("Ensured SLA policies for all category/priority combinations.")
-    return pd.DataFrame(rows)
-
-
 def _build_local_reference_data(
     config: SampleConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     departments_df = _build_local_departments()
     users_df = _build_local_users(config, departments_df)
-    sla_policies_df = _build_local_sla_policies()
-    return departments_df, users_df, sla_policies_df
+    return departments_df, users_df
 
 
 def generate_sample_requests(
     config: SampleConfig | None = None,
     departments_df: pd.DataFrame | None = None,
     users_df: pd.DataFrame | None = None,
-    sla_policies_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
     Generate a dataframe of synthetic service requests aligned with the data contract.
     """
     cfg = config or SampleConfig()
-    if departments_df is None or users_df is None or sla_policies_df is None:
-        departments_df, users_df, sla_policies_df = _build_local_reference_data(cfg)
+    if departments_df is None or users_df is None:
+        departments_df, users_df = _build_local_reference_data(cfg)
 
     now = _utcnow()
     rows: List[Dict[str, Any]] = []
@@ -437,7 +353,6 @@ def generate_sample_requests(
     requesters_df = users_df[users_df["role"] == "USER"].reset_index(drop=True)
     agents_df = users_df[users_df["role"] == "AGENT"].reset_index(drop=True)
     departments_by_category = departments_df.set_index("category").to_dict("index")
-    sla_lookup = sla_policies_df.set_index(["category", "priority"]).to_dict("index")
 
     for index in range(cfg.num_requests):
         category = random.choices(SERVICE_CATEGORIES, weights=category_weights, k=1)[0]
@@ -455,10 +370,14 @@ def generate_sample_requests(
         requester = requesters_df.sample(n=1).iloc[0]
         available_agents = agents_df[agents_df["department_category"] == category]
         assigned_agent = available_agents.sample(n=1).iloc[0]
-        policy = sla_lookup[(category, priority)]
 
-        response_hours = policy["response_time_hours"]
-        resolution_hours = policy["resolution_time_hours"]
+        response_hours, resolution_hours = SLA_POLICY_DEFAULTS.get(
+            (category, priority),
+            SLA_POLICY_DEFAULTS.get(
+                ("IT_SUPPORT", priority),
+                (4, 24),
+            ),
+        )
         response_deadline = created_at + timedelta(hours=response_hours)
         sla_deadline = created_at + timedelta(hours=resolution_hours)
 
@@ -567,12 +486,10 @@ def load_sample_requests(engine: Engine, config: SampleConfig | None = None) -> 
     cfg = config or SampleConfig()
     departments_df = _ensure_departments(engine)
     users_df = _ensure_users(engine, departments_df, cfg)
-    sla_policies_df = ensure_sla_policies(engine)
     requests_df = generate_sample_requests(
         cfg,
         departments_df=departments_df,
         users_df=users_df,
-        sla_policies_df=sla_policies_df,
     )
 
     if requests_df.empty:

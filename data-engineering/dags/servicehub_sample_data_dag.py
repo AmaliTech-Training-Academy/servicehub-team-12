@@ -8,12 +8,10 @@ from datetime import datetime
 from pathlib import Path
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 # Ensure the project root is on sys.path so that shared modules can be imported
-PROJECT_ROOT = Path(
-    os.getenv("SERVICEHUB_DE_ROOT", Path(__file__).resolve().parents[1])
-)
+PROJECT_ROOT = Path(os.getenv("PYTHONPATH", Path(__file__).resolve().parents[1]))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 

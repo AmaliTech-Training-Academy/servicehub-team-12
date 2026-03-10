@@ -13,12 +13,10 @@ from pathlib import Path
 
 import pandas as pd
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 # Ensure the project root is on sys.path so that ETL modules can be imported
-PROJECT_ROOT = Path(
-    os.getenv("SERVICEHUB_DE_ROOT", Path(__file__).resolve().parents[1])
-)
+PROJECT_ROOT = Path(os.getenv("PYTHONPATH", Path(__file__).resolve().parents[1]))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
@@ -176,8 +174,8 @@ with DAG(
     dag_id="servicehub_sla_analytics",
     description="Nightly ETL for ServiceHub SLA analytics and request volumes.",
     default_args=default_args,
-    schedule="0 0 * * *",  # Midnight every day
-    start_date=datetime(2024, 1, 1),
+    schedule="0 * * * *",  # hourly
+    start_date=datetime(2026, 3, 10),
     catchup=False,
     max_active_runs=1,
     tags=["servicehub", "analytics", "sla"],
