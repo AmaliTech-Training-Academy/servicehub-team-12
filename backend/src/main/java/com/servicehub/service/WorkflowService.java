@@ -12,7 +12,6 @@ public interface WorkflowService {
      * Only AGENT and ADMIN roles can perform transitions
      *
      * @param requestId the ID of the service request
-     * @return the updated ServiceRequest
      * @throws InvalidTransitionException if transition is not allowed
      */
     void transitionStatus(UUID requestId);

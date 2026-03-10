@@ -10,7 +10,6 @@ import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.service.ServiceRequestService;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +26,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class WorkflowServiceImpl implements WorkflowService {
 
-    private final ServiceRequestMapper serviceRequestMapper;
-
     private static final Map<RequestStatus, RequestStatus> NEXT_STATUS = Map.of(
             RequestStatus.OPEN, RequestStatus.ASSIGNED,
             RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS,
@@ -36,7 +33,6 @@ public class WorkflowServiceImpl implements WorkflowService {
             RequestStatus.RESOLVED, RequestStatus.CLOSED
     );
 
-    private final ServiceRequestService serviceRequestService;
     private final ServiceRequestRepository serviceRequestRepository;
 
     @Override
