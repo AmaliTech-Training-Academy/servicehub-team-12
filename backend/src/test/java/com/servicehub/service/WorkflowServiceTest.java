@@ -1,46 +1,32 @@
 package com.servicehub.service;
 
-import com.servicehub.dto.ServiceRequestResponse;
-import com.servicehub.exception.InvalidTransitionException;
-import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
-import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
-import com.servicehub.model.enums.Role;
 import com.servicehub.service.impl.WorkflowServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WorkflowServiceTest {
-
-    @Mock
-    private ServiceRequestService serviceRequestService;
-
-    @Mock
-    private ServiceRequestMapper serviceRequestMapper;
 
     @InjectMocks
     private WorkflowServiceImpl workflowService;
 
     private ServiceRequest testRequest;
-    private UUID testRequestId;
 
     @BeforeEach
     void setUp() {
-        testRequestId = UUID.randomUUID();
+        UUID testRequestId = UUID.randomUUID();
+
         testRequest = new ServiceRequest();
         testRequest.setId(testRequestId);
         testRequest.setStatus(RequestStatus.OPEN);
@@ -48,139 +34,201 @@ class WorkflowServiceTest {
         testRequest.setUpdatedAt(OffsetDateTime.now());
     }
 
-
     @Test
-    @DisplayName("OPEN -> ASSIGNED")
-    void testTransition_OpenToAssigned() {
-        mockFindRequest();
+    @DisplayName("Should transition from OPEN to ASSIGNED")
+    void testTransitionStatus_OpenToAssigned() {
+        testRequest.setStatus(RequestStatus.OPEN);
 
-        workflowService.transitionStatus(testRequestId, RequestStatus.ASSIGNED);
+        workflowService.transitionStatus(testRequest);
 
         assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
         assertNotNull(testRequest.getFirstResponseAt());
-        verify(serviceRequestMapper).toEntity(any());
+        assertNotNull(testRequest.getUpdatedAt());
     }
 
     @Test
-    @DisplayName("ASSIGNED -> IN_PROGRESS")
-    void testTransition_AssignedToInProgress() {
+    @DisplayName("Should transition from ASSIGNED to IN_PROGRESS")
+    void testTransitionStatus_AssignedToInProgress() {
         testRequest.setStatus(RequestStatus.ASSIGNED);
+        OffsetDateTime firstResponse = OffsetDateTime.now().minusHours(1);
+        testRequest.setFirstResponseAt(firstResponse);
 
-        User assignedAgent = new User();
-        assignedAgent.setId(UUID.randomUUID());
-        assignedAgent.setEmail("agent@example.com");
-        assignedAgent.setRole(Role.AGENT);
-        testRequest.setAssignedTo(assignedAgent);
-
-        mockFindRequest();
-
-        workflowService.transitionStatus(testRequestId, RequestStatus.IN_PROGRESS);
+        workflowService.transitionStatus(testRequest);
 
         assertEquals(RequestStatus.IN_PROGRESS, testRequest.getStatus());
+        assertEquals(firstResponse, testRequest.getFirstResponseAt()); // Should not change
+        assertNotNull(testRequest.getUpdatedAt());
     }
 
     @Test
-    @DisplayName("IN_PROGRESS -> RESOLVED")
-    void testTransition_InProgressToResolved() {
+    @DisplayName("Should transition from IN_PROGRESS to RESOLVED")
+    void testTransitionStatus_InProgressToResolved() {
         testRequest.setStatus(RequestStatus.IN_PROGRESS);
-        User assignedAgent = new User();
-        assignedAgent.setId(UUID.randomUUID());
-        assignedAgent.setEmail("agent@example.com");
-        assignedAgent.setRole(Role.AGENT);
-        testRequest.setAssignedTo(assignedAgent);
-        mockFindRequest();
 
-        workflowService.transitionStatus(testRequestId, RequestStatus.RESOLVED);
+        workflowService.transitionStatus(testRequest);
+
+        assertEquals(RequestStatus.RESOLVED, testRequest.getStatus());
+        assertNotNull(testRequest.getResolvedAt());
+        assertNotNull(testRequest.getUpdatedAt());
+    }
+
+    @Test
+    @DisplayName("Should transition from RESOLVED to CLOSED")
+    void testTransitionStatus_ResolvedToClosed() {
+        testRequest.setStatus(RequestStatus.RESOLVED);
+        OffsetDateTime resolvedTime = OffsetDateTime.now().minusHours(1);
+        testRequest.setResolvedAt(resolvedTime);
+
+        workflowService.transitionStatus(testRequest);
+
+        assertEquals(RequestStatus.CLOSED, testRequest.getStatus());
+        assertNotNull(testRequest.getClosedAt());
+        assertEquals(resolvedTime, testRequest.getResolvedAt()); // Should not change
+        assertNotNull(testRequest.getUpdatedAt());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when transitioning from CLOSED (terminal state)")
+    void testTransitionStatus_FromClosed_ThrowsException() {
+        testRequest.setStatus(RequestStatus.CLOSED);
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> workflowService.transitionStatus(testRequest)
+        );
+
+        assertTrue(exception.getMessage().contains("No valid transition from status: CLOSED"));
+    }
+
+    @Test
+    @DisplayName("Should set first_response_at only once when transitioning to ASSIGNED")
+    void testTransitionStatus_FirstResponseAtSetOnlyOnce() {
+        testRequest.setStatus(RequestStatus.OPEN);
+
+        workflowService.transitionStatus(testRequest);
+        OffsetDateTime firstResponseAt = testRequest.getFirstResponseAt();
+
+        assertNotNull(firstResponseAt);
+        assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
+
+        testRequest.setStatus(RequestStatus.OPEN);
+        workflowService.transitionStatus(testRequest);
+
+        assertEquals(firstResponseAt, testRequest.getFirstResponseAt());
+    }
+
+    @Test
+    @DisplayName("Should update updated_at timestamp on every transition")
+    void testTransitionStatus_UpdatesUpdatedAt() {
+        testRequest.setStatus(RequestStatus.OPEN);
+        OffsetDateTime initialUpdatedAt = testRequest.getUpdatedAt();
+
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        workflowService.transitionStatus(testRequest);
+
+        assertNotEquals(initialUpdatedAt, testRequest.getUpdatedAt());
+        assertTrue(testRequest.getUpdatedAt().isAfter(initialUpdatedAt));
+    }
+
+    @Test
+    @DisplayName("Should set resolved_at when transitioning to RESOLVED")
+    void testTransitionStatus_SetsResolvedAt() {
+        testRequest.setStatus(RequestStatus.IN_PROGRESS);
+        assertNull(testRequest.getResolvedAt());
+
+        workflowService.transitionStatus(testRequest);
 
         assertEquals(RequestStatus.RESOLVED, testRequest.getStatus());
         assertNotNull(testRequest.getResolvedAt());
     }
 
     @Test
-    @DisplayName("RESOLVED -> CLOSED")
-    void testTransition_ResolvedToClosed() {
+    @DisplayName("Should set closed_at when transitioning to CLOSED")
+    void testTransitionStatus_SetsClosedAt() {
         testRequest.setStatus(RequestStatus.RESOLVED);
-        mockFindRequest();
+        assertNull(testRequest.getClosedAt());
 
-        workflowService.transitionStatus(testRequestId, RequestStatus.CLOSED);
+        workflowService.transitionStatus(testRequest);
 
         assertEquals(RequestStatus.CLOSED, testRequest.getStatus());
         assertNotNull(testRequest.getClosedAt());
     }
 
     @Test
-    @DisplayName("Reject backward transition")
-    void testInvalidTransition_Backward() {
-        testRequest.setStatus(RequestStatus.ASSIGNED);
-        mockFindRequest();
-
-        InvalidTransitionException ex = assertThrows(InvalidTransitionException.class,
-                () -> workflowService.transitionStatus(testRequestId, RequestStatus.OPEN));
-
-        assertTrue(ex.getMessage().contains("Invalid status transition"));
-    }
-
-    @Test
-    @DisplayName("Reject skipping status")
-    void testInvalidTransition_Skip() {
+    @DisplayName("Should complete full workflow from OPEN to CLOSED")
+    void testTransitionStatus_CompleteWorkflow() {
         testRequest.setStatus(RequestStatus.OPEN);
-        mockFindRequest();
 
-        InvalidTransitionException ex = assertThrows(InvalidTransitionException.class,
-                () -> workflowService.transitionStatus(testRequestId, RequestStatus.IN_PROGRESS));
+        workflowService.transitionStatus(testRequest);
+        assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
+        assertNotNull(testRequest.getFirstResponseAt());
 
-        assertTrue(ex.getMessage().contains("Invalid status transition"));
+        workflowService.transitionStatus(testRequest);
+        assertEquals(RequestStatus.IN_PROGRESS, testRequest.getStatus());
+
+        workflowService.transitionStatus(testRequest);
+        assertEquals(RequestStatus.RESOLVED, testRequest.getStatus());
+        assertNotNull(testRequest.getResolvedAt());
+
+         workflowService.transitionStatus(testRequest);
+        assertEquals(RequestStatus.CLOSED, testRequest.getStatus());
+        assertNotNull(testRequest.getClosedAt());
+
+         assertNotNull(testRequest.getFirstResponseAt());
+        assertNotNull(testRequest.getResolvedAt());
+        assertNotNull(testRequest.getClosedAt());
+        assertNotNull(testRequest.getUpdatedAt());
     }
 
     @Test
-    @DisplayName("Cannot move to IN_PROGRESS without assigned agent")
-    void testTransition_InProgressWithoutAssignment() {
+    @DisplayName("Should maintain timestamp order in workflow")
+    void testTransitionStatus_TimestampOrder() {
+         testRequest.setStatus(RequestStatus.OPEN);
+        OffsetDateTime createdAt = testRequest.getCreatedAt();
+
+         workflowService.transitionStatus(testRequest);
+        OffsetDateTime firstResponseAt = testRequest.getFirstResponseAt();
+
+        workflowService.transitionStatus(testRequest);
+
+        workflowService.transitionStatus(testRequest);
+        OffsetDateTime resolvedAt = testRequest.getResolvedAt();
+
+        workflowService.transitionStatus(testRequest);
+        OffsetDateTime closedAt = testRequest.getClosedAt();
+
+         assertTrue(firstResponseAt.isAfter(createdAt) || firstResponseAt.isEqual(createdAt));
+        assertTrue(resolvedAt.isAfter(firstResponseAt) || resolvedAt.isEqual(firstResponseAt));
+        assertTrue(closedAt.isAfter(resolvedAt) || closedAt.isEqual(resolvedAt));
+    }
+
+    @Test
+    @DisplayName("Should not set first_response_at when not transitioning to ASSIGNED")
+    void testTransitionStatus_NoFirstResponseAtForOtherTransitions() {
         testRequest.setStatus(RequestStatus.ASSIGNED);
-        testRequest.setAssignedTo(null);
-        mockFindRequest();
+        assertNull(testRequest.getFirstResponseAt());
 
-        InvalidTransitionException ex = assertThrows(InvalidTransitionException.class,
-                () -> workflowService.transitionStatus(testRequestId, RequestStatus.IN_PROGRESS));
+        workflowService.transitionStatus(testRequest);
 
-        assertTrue(ex.getMessage().contains("without assigning"));
-    }
-
-
-    @Test
-    @DisplayName("isValidTransition works for all statuses")
-    void testIsValidTransition() {
-        assertTrue(workflowService.isValidTransition(RequestStatus.OPEN, RequestStatus.ASSIGNED));
-        assertTrue(workflowService.isValidTransition(RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS));
-        assertTrue(workflowService.isValidTransition(RequestStatus.IN_PROGRESS, RequestStatus.RESOLVED));
-        assertTrue(workflowService.isValidTransition(RequestStatus.RESOLVED, RequestStatus.CLOSED));
-
-        assertFalse(workflowService.isValidTransition(RequestStatus.OPEN, RequestStatus.IN_PROGRESS));
-        assertFalse(workflowService.isValidTransition(RequestStatus.RESOLVED, RequestStatus.OPEN));
-        assertFalse(workflowService.isValidTransition(null, RequestStatus.OPEN));
-        assertFalse(workflowService.isValidTransition(RequestStatus.OPEN, null));
-        assertFalse(workflowService.isValidTransition(null, null));
+        assertEquals(RequestStatus.IN_PROGRESS, testRequest.getStatus());
+        assertNull(testRequest.getFirstResponseAt());
     }
 
     @Test
-    @DisplayName("getValidNextStatuses returns correct lists")
-    void testGetValidNextStatuses() {
-        List<RequestStatus> openNext = workflowService.getValidNextStatuses(RequestStatus.OPEN);
-        assertEquals(1, openNext.size());
-        assertTrue(openNext.contains(RequestStatus.ASSIGNED));
+    @DisplayName("Should not modify resolved_at after it's set")
+    void testTransitionStatus_ResolvedAtNotModified() {
+        testRequest.setStatus(RequestStatus.IN_PROGRESS);
 
-        List<RequestStatus> closedNext = workflowService.getValidNextStatuses(RequestStatus.CLOSED);
-        assertTrue(closedNext.isEmpty());
-    }
+        workflowService.transitionStatus(testRequest);
+        OffsetDateTime resolvedAt = testRequest.getResolvedAt();
 
+        workflowService.transitionStatus(testRequest);
 
-    private void mockFindRequest() {
-        ServiceRequestResponse response = ServiceRequestResponse.builder()
-                .id(testRequestId)
-                .status(RequestStatus.OPEN)
-                .build();
-        response.setId(testRequestId);
-        response.setStatus(testRequest.getStatus());
-        when(serviceRequestService.findById(testRequestId)).thenReturn(response);
-        when(serviceRequestMapper.toEntity(response)).thenReturn(testRequest);
+        assertEquals(resolvedAt, testRequest.getResolvedAt());
     }
 }
