@@ -6,10 +6,8 @@ import java.util.UUID;
 
 import com.servicehub.exception.InvalidTransitionException;
 import com.servicehub.exception.ResourceNotFoundException;
-import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.repository.ServiceRequestRepository;
-import com.servicehub.service.ServiceRequestService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
