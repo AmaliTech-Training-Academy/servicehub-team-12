@@ -1,5 +1,7 @@
 package com.servicehub.model.enums;
 
 public enum RequestCategory {
-    IT, FACILITIES, HR
+    IT_SUPPORT,
+    FACILITIES,
+    HR_REQUEST
 }

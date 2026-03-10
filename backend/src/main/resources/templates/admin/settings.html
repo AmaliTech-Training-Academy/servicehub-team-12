@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>Settings</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">Settings</h2>
+      <p class="text-sm text-muted-foreground-1">Configure system-wide preferences.</p>
+    </div>
+
+    <div th:if="${success}" class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-5">
+      <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span th:text="${success}"></span>
+    </div>
+
+    <div class="max-w-2xl space-y-6">
+
+      <!-- General settings -->
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs p-6">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-5">General</h3>
+        <form th:action="@{/admin/settings}" method="post" class="space-y-4">
+
+          <div>
+            <label for="systemName" class="block text-sm font-medium text-foreground mb-1.5">System Name</label>
+            <input type="text" id="systemName" name="systemName"
+                   th:value="${settings?.systemName} ?: 'ServiceHub'"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+
+          <div>
+            <label for="supportEmail" class="block text-sm font-medium text-foreground mb-1.5">Support Email</label>
+            <input type="email" id="supportEmail" name="supportEmail"
+                   th:value="${settings?.supportEmail} ?: ''"
+                   placeholder="support@company.com"
+                   class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          </div>
+
+          <div class="pt-1">
+            <button type="submit"
+                    class="py-2.5 px-5 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg bg-primary border border-primary-line text-primary-foreground hover:bg-primary-hover focus:outline-hidden focus:bg-primary-focus transition">
+              Save General Settings
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- SLA settings -->
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs p-6">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-5">SLA Thresholds (hours)</h3>
+        <form th:action="@{/admin/settings/sla}" method="post" class="space-y-4">
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="slaCritical" class="block text-sm font-medium text-foreground mb-1.5">Critical</label>
+              <input type="number" id="slaCritical" name="slaCritical" min="1"
+                     th:value="${settings?.slaCriticalHours} ?: 4"
+                     class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            </div>
+            <div>
+              <label for="slaHigh" class="block text-sm font-medium text-foreground mb-1.5">High</label>
+              <input type="number" id="slaHigh" name="slaHigh" min="1"
+                     th:value="${settings?.slaHighHours} ?: 8"
+                     class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            </div>
+            <div>
+              <label for="slaMedium" class="block text-sm font-medium text-foreground mb-1.5">Medium</label>
+              <input type="number" id="slaMedium" name="slaMedium" min="1"
+                     th:value="${settings?.slaMediumHours} ?: 24"
+                     class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            </div>
+            <div>
+              <label for="slaLow" class="block text-sm font-medium text-foreground mb-1.5">Low</label>
+              <input type="number" id="slaLow" name="slaLow" min="1"
+                     th:value="${settings?.slaLowHours} ?: 72"
+                     class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            </div>
+          </div>
+
+          <div class="pt-1">
+            <button type="submit"
+                    class="py-2.5 px-5 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg bg-primary border border-primary-line text-primary-foreground hover:bg-primary-hover focus:outline-hidden focus:bg-primary-focus transition">
+              Save SLA Settings
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="bg-card border border-red-200 rounded-xl shadow-2xs p-6">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-red-600 mb-5">Danger Zone</h3>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-foreground">Clear all analytics data</p>
+            <p class="text-xs text-muted-foreground-2 mt-0.5">Permanently deletes all ETL-generated metrics. Cannot be undone.</p>
+          </div>
+          <form th:action="@{/admin/settings/clear-analytics}" method="post"
+                onsubmit="return confirm('This will permanently delete all analytics data. Are you sure?')">
+            <button type="submit"
+                    class="py-2 px-4 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition">
+              Clear Data
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>
+

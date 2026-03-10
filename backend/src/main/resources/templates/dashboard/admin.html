@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+
+<head>
+  <title>Operations Dashboard</title>
+</head>
+
+<body>
+  <div th:fragment="content">
+
+    <!-- Header -->
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-semibold text-foreground">Operations Dashboard</h2>
+        <p class="text-sm text-muted-foreground-1">Analytics refreshed nightly · live breach data</p>
+      </div>
+      <div th:if="${activeBreaches > 0}"
+           class="flex items-center gap-2 bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-full animate-pulse">
+        <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+        </svg>
+        <span th:text="${activeBreaches}"></span>
+        Active Breach<span th:if="${activeBreaches > 1}">es</span>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex gap-1 mb-6 border-b border-card-line">
+      <button type="button" data-tab="overview"
+              class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 border-primary text-primary transition-colors">
+        <span class="flex items-center gap-2">
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+          Overview
+        </span>
+      </button>
+      <button type="button" data-tab="sla"
+              class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 border-transparent text-muted-foreground-1 hover:text-foreground hover:border-muted-foreground-2 transition-colors">
+        <span class="flex items-center gap-2">
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          SLA Compliance
+        </span>
+      </button>
+      <button type="button" data-tab="agents"
+              class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 border-transparent text-muted-foreground-1 hover:text-foreground hover:border-muted-foreground-2 transition-colors">
+        <span class="flex items-center gap-2">
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Agents
+        </span>
+      </button>
+      <button type="button" data-tab="departments"
+              class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 border-transparent text-muted-foreground-1 hover:text-foreground hover:border-muted-foreground-2 transition-colors">
+        <span class="flex items-center gap-2">
+          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
+          </svg>
+          Departments
+        </span>
+      </button>
+    </div>
+
+    <!-- ═══════════ TAB 1: OVERVIEW ═══════════ -->
+    <div id="overview" class="tab-panel">
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Total Tickets</p>
+          <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="${totalTickets}">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">All time</p>
+        </div>
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+               th:classappend="${overallCompliance >= 90} ? 'bg-green-500' : (${overallCompliance >= 70} ? 'bg-amber-500' : 'bg-red-500')">
+          </div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">SLA Compliance</p>
+          <p class="text-3xl font-bold leading-none mt-1"
+             th:classappend="${overallCompliance >= 90} ? 'text-green-600' : (${overallCompliance >= 70} ? 'text-amber-600' : 'text-red-600')"
+             th:text="|${overallCompliance}%|">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">Weighted average · target 90%</p>
+        </div>
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-amber-500"></div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Total Breaches</p>
+          <p class="text-3xl font-bold text-amber-600 leading-none mt-1" th:text="${totalBreached}">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">All time</p>
+        </div>
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+               th:classappend="${activeBreaches > 0} ? 'bg-red-500' : 'bg-green-500'">
+          </div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">
+            Active Breaches <span class="text-blue-500 lowercase normal-case font-medium">(live)</span>
+          </p>
+          <p class="text-3xl font-bold leading-none mt-1"
+             th:classappend="${activeBreaches > 0} ? 'text-red-600' : 'text-green-600'"
+             th:text="${activeBreaches}">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">Open &amp; breached right now</p>
+        </div>
+
+      </div>
+
+      <!-- At-risk panel -->
+      <div th:if="${not #lists.isEmpty(atRiskTickets)}"
+           class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="size-4 text-amber-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+          </svg>
+          <h3 class="text-xs font-bold uppercase tracking-widest text-amber-700">Tickets breaching SLA within 2 hours</h3>
+          <span class="ms-auto inline-flex items-center py-0.5 px-2 rounded-full text-xs font-bold bg-amber-500 text-white"
+                th:text="${#lists.size(atRiskTickets)}"></span>
+        </div>
+        <div class="space-y-2">
+          <div th:each="ticket : ${atRiskTickets}"
+               class="flex items-center justify-between bg-card border-l-4 border-amber-400 rounded-lg px-4 py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-foreground" th:text="${ticket.title}"></span>
+              <span class="inline-flex items-center py-0.5 px-2 rounded text-xs font-bold uppercase tracking-wide"
+                    th:classappend="${ticket.priority == 'CRITICAL'} ? 'bg-red-600 text-white'   :
+                                     (${ticket.priority == 'HIGH'}     ? 'bg-amber-500 text-white' :
+                                     (${ticket.priority == 'MEDIUM'}   ? 'bg-blue-500 text-white'  : 'bg-surface-1 text-muted-foreground-2'))"
+                    th:text="${ticket.priority}"></span>
+            </div>
+            <span class="text-xs text-muted-foreground-1">
+              Deadline <strong th:text="${#temporals.format(ticket.slaDeadline, 'HH:mm')}"></strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+            <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+            </svg>
+            30-Day Ticket Volume
+          </h3>
+          <canvas id="volumeChart" height="120"></canvas>
+        </div>
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+            <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Volume by Category
+          </h3>
+          <canvas id="categoryChart" height="120"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════ TAB 2: SLA ═══════════ -->
+    <div id="sla" class="tab-panel hidden">
+
+      <div th:if="${#lists.isEmpty(slaMetrics)}"
+           class="flex flex-col items-center justify-center py-16 text-center">
+        <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <p class="text-sm text-muted-foreground-1">SLA data not yet available.</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">The ETL pipeline runs at midnight UTC.</p>
+      </div>
+
+      <div th:if="${not #lists.isEmpty(slaMetrics)}"
+           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div th:each="m : ${slaMetrics}" class="bg-card border border-card-line rounded-xl p-4 shadow-2xs">
+          <p class="text-xs font-bold uppercase tracking-wide text-muted-foreground-2" th:text="${m.category}"></p>
+          <p class="text-xs text-muted-foreground-2 mb-3" th:text="${m.priority}"></p>
+          <p class="text-3xl font-bold leading-none mb-2"
+             th:classappend="${m.complianceRatePct >= 90} ? 'text-green-600' : (${m.complianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+             th:text="|${m.complianceRatePct}%|"></p>
+          <div class="h-1 bg-muted-hover rounded-full overflow-hidden mb-2">
+            <div class="h-full rounded-full"
+                 th:classappend="${m.complianceRatePct >= 90} ? 'bg-green-500' : (${m.complianceRatePct >= 70} ? 'bg-amber-500' : 'bg-red-500')"
+                 th:style="|width: ${m.complianceRatePct}%|"></div>
+          </div>
+          <div class="flex justify-between text-xs text-muted-foreground-2">
+            <span th:text="|${m.totalTickets} tickets|"></span>
+            <span th:text="|${m.avgResolutionHours}h avg|"></span>
+          </div>
+        </div>
+      </div>
+
+      <div th:if="${not #lists.isEmpty(slaMetrics)}" class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          Avg Resolution Hours by Category &amp; Priority
+        </h3>
+        <canvas id="slaResolutionChart" height="90"></canvas>
+      </div>
+
+    </div>
+
+    <!-- ═══════════ TAB 3: AGENTS ═══════════ -->
+    <div id="agents" class="tab-panel hidden">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+            <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            This Week's Leaderboard
+          </h3>
+
+          <div th:if="${#lists.isEmpty(leaderboard)}" class="flex flex-col items-center justify-center py-8 text-center">
+            <svg class="size-8 text-muted-foreground-2 opacity-30 mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <p class="text-xs text-muted-foreground-2">No agent data for this week yet. ETL runs at midnight UTC.</p>
+          </div>
+
+          <div th:each="a, aStat : ${leaderboard}"
+               class="flex items-center gap-3 py-3 border-b border-card-line last:border-b-0">
+            <div class="size-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                 th:classappend="${aStat.count == 1} ? 'bg-yellow-600' : (${aStat.count == 2} ? 'bg-slate-500' : (${aStat.count == 3} ? 'bg-amber-700' : 'bg-muted-foreground-2'))"
+                 th:text="${aStat.count}"></div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-foreground" th:text="${a.agentName}"></p>
+              <p class="text-xs text-muted-foreground-2" th:text="|${a.ticketsResolved} resolved - ${a.avgResolutionHours}h avg|"></p>
+            </div>
+            <span class="text-sm font-bold"
+                  th:classappend="${a.slaComplianceRatePct >= 90} ? 'text-green-600' : (${a.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+                  th:text="|${a.slaComplianceRatePct}%|"></span>
+          </div>
+        </div>
+
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+            <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+            </svg>
+            SLA Compliance — This Week
+          </h3>
+          <canvas id="agentChart" height="220"></canvas>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB 4: DEPARTMENTS ═══════════ -->
+    <div id="departments" class="tab-panel hidden">
+
+      <div th:if="${#lists.isEmpty(deptWorkload)}"
+           class="flex flex-col items-center justify-center py-16 text-center">
+        <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <p class="text-sm text-muted-foreground-1">No department data for this week yet.</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">ETL runs at midnight UTC.</p>
+      </div>
+
+      <div th:if="${not #lists.isEmpty(deptWorkload)}"
+           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div th:each="dept : ${deptWorkload}" class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+            <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/>
+            </svg>
+            <span th:text="${dept.departmentName}"></span>
+          </h3>
+          <div class="flex justify-between mb-4">
+            <div class="text-center">
+              <p class="text-2xl font-bold text-amber-600 leading-none" th:text="${dept.openTickets}"></p>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground-2 mt-1">Open</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-green-600 leading-none" th:text="${dept.resolvedTickets}"></p>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground-2 mt-1">Resolved</p>
+            </div>
+            <div class="text-center">
+              <p class="text-2xl font-bold text-red-600 leading-none" th:text="${dept.breachedTickets}"></p>
+              <p class="text-xs uppercase tracking-wide text-muted-foreground-2 mt-1">Breached</p>
+            </div>
+          </div>
+          <p class="text-xs text-muted-foreground-2 mb-1">Resolution rate</p>
+          <div class="h-1.5 bg-muted-hover rounded-full overflow-hidden mb-2">
+            <div class="h-full rounded-full bg-primary"
+                 th:with="total=${dept.openTickets + dept.resolvedTickets}"
+                 th:style="${total > 0} ? ('width: ' + ${#numbers.formatDecimal((dept.resolvedTickets * 100.0) / total, 1, 0)} + '%') : 'width: 0%'"></div>
+          </div>
+          <p class="text-xs text-muted-foreground-2">
+            Avg resolution: <strong th:text="|${dept.avgResolutionHours}h|"></strong>
+          </p>
+        </div>
+      </div>
+
+      <div th:if="${not #lists.isEmpty(deptWorkload)}" class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          Open vs Resolved by Department — This Week
+        </h3>
+        <canvas id="deptChart" height="90"></canvas>
+      </div>
+
+    </div>
+
+    <!-- ETL notice -->
+    <div class="mt-6 pt-4 border-t border-card-line text-xs text-muted-foreground-2 text-end">
+      <span th:if="${lastEtlRun != null}">
+        Analytics data last refreshed:
+        <strong th:text="${#temporals.format(lastEtlRun, 'dd MMM yyyy · HH:mm')} + ' UTC'"></strong>
+      </span>
+      <span th:if="${lastEtlRun == null}" class="text-amber-600 flex items-center justify-end gap-1">
+        <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+        ETL pipeline has not run yet — analytics unavailable
+      </span>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script th:inline="javascript">
+    "use strict";
+
+    // Coerce every variable to an array — guards against Thymeleaf
+    // injecting null when a model attribute is absent or null.
+    const dailyVolume  = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${dailyVolume}]]*/ null);
+    const slaMetrics   = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${slaMetrics}]]*/ null);
+    const leaderboard  = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${leaderboard}]]*/ null);
+    const deptWorkload = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${deptWorkload}]]*/ null);
+
+    // ── Tab switching ─────────────────────────────────────────────
+    // Runs immediately — the script is at the bottom of the body so
+    // all .tab-btn and .tab-panel elements already exist in the DOM.
+    (function initTabs() {
+      const tabBtns   = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+
+      tabBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const target = this.dataset.tab;
+
+          tabBtns.forEach(function (b) {
+            b.classList.remove('border-primary', 'text-primary');
+            b.classList.add('border-transparent', 'text-muted-foreground-1');
+          });
+          this.classList.remove('border-transparent', 'text-muted-foreground-1');
+          this.classList.add('border-primary', 'text-primary');
+
+          tabPanels.forEach(function (p) { p.classList.add('hidden'); });
+          const panel = document.getElementById(target);
+          if (panel) panel.classList.remove('hidden');
+        });
+      });
+    })();
+
+    // ── Charts ────────────────────────────────────────────────────
+    // Chart.js is loaded via a synchronous <script src> tag directly
+    // above this block, so `Chart` is available immediately here.
+    (function buildCharts() {
+      if (typeof Chart === 'undefined') return;
+
+      const P       = { blue: '#2563eb', green: '#16a34a', amber: '#d97706', red: '#dc2626', slate: '#94a3b8' };
+      const PALETTE = [P.blue, P.green, P.amber, P.red, '#7c3aed', '#0891b2'];
+      Chart.defaults.font.family = "'Inter', sans-serif";
+      Chart.defaults.font.size   = 12;
+
+      // Volume chart
+      (function () {
+        const el = document.getElementById('volumeChart');
+        if (!el || !dailyVolume.length) return;
+        const dates      = [...new Set(dailyVolume.map(function (r) { return r.reportDate; }))].sort();
+        const categories = [...new Set(dailyVolume.map(function (r) { return r.category; }))];
+        const datasets   = categories.map(function (cat, i) {
+          return {
+            label: cat,
+            data: dates.map(function (date) {
+              return dailyVolume
+                .filter(function (r) { return r.reportDate === date && r.category === cat; })
+                .reduce(function (s, r) { return s + (r.ticketCount || 0); }, 0);
+            }),
+            borderColor: PALETTE[i], backgroundColor: PALETTE[i] + '1a',
+            borderWidth: 2, tension: 0.35, pointRadius: 2, fill: true,
+          };
+        });
+        new Chart(el, {
+          type: 'line',
+          data: { labels: dates, datasets: datasets },
+          options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
+          },
+        });
+      })();
+
+      // Category doughnut chart
+      (function () {
+        const el = document.getElementById('categoryChart');
+        if (!el || !slaMetrics.length) return;
+        const catTotals = {};
+        slaMetrics.forEach(function (m) {
+          catTotals[m.category] = (catTotals[m.category] || 0) + (m.totalTickets || 0);
+        });
+        new Chart(el, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(catTotals),
+            datasets: [{ data: Object.values(catTotals), backgroundColor: [P.blue, P.green, P.amber], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }],
+          },
+          options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } },
+        });
+      })();
+
+      // SLA resolution horizontal bar chart
+      (function () {
+        const el = document.getElementById('slaResolutionChart');
+        if (!el || !slaMetrics.length) return;
+        const values = slaMetrics.map(function (m) { return parseFloat(m.avgResolutionHours) || 0; });
+        new Chart(el, {
+          type: 'bar',
+          data: {
+            labels: slaMetrics.map(function (m) { return m.category + ' / ' + m.priority; }),
+            datasets: [{ label: 'Avg Resolution Hours', data: values, backgroundColor: values.map(function (v) { return v < 12 ? P.green : v < 36 ? P.amber : P.red; }), borderRadius: 4, borderSkipped: false }],
+          },
+          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { callback: function (v) { return v + 'h'; } } }, y: { grid: { display: false } } } },
+        });
+      })();
+
+      // Agent SLA compliance bar chart
+      (function () {
+        const el = document.getElementById('agentChart');
+        if (!el || !leaderboard.length) return;
+        const compliance = leaderboard.map(function (a) { return parseFloat(a.slaComplianceRatePct) || 0; });
+        new Chart(el, {
+          type: 'bar',
+          data: {
+            labels: leaderboard.map(function (a) { return a.agentName; }),
+            datasets: [{ label: 'SLA Compliance %', data: compliance, backgroundColor: compliance.map(function (v) { return v >= 90 ? P.green : v >= 70 ? P.amber : P.red; }), borderRadius: 6, borderSkipped: false }],
+          },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } } }, x: { grid: { display: false } } } },
+        });
+      })();
+
+      // Department open vs resolved bar chart
+      (function () {
+        const el = document.getElementById('deptChart');
+        if (!el || !deptWorkload.length) return;
+        new Chart(el, {
+          type: 'bar',
+          data: {
+            labels: deptWorkload.map(function (d) { return d.departmentName; }),
+            datasets: [
+              { label: 'Open',     data: deptWorkload.map(function (d) { return d.openTickets     || 0; }), backgroundColor: P.amber, borderRadius: 5 },
+              { label: 'Resolved', data: deptWorkload.map(function (d) { return d.resolvedTickets || 0; }), backgroundColor: P.green, borderRadius: 5 },
+            ],
+          },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
+        });
+      })();
+
+    })(); // end buildCharts
+  </script>
+
+  </div>
+</body>
+
+</html>
+
