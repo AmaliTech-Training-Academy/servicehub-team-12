@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>SLA Reports</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">SLA Reports</h2>
+      <p class="text-sm text-muted-foreground-1">Compliance breakdown by category and priority.</p>
+    </div>
+
+    <div th:if="${slaMetrics == null or #lists.isEmpty(slaMetrics)}"
+         class="bg-card border border-card-line rounded-xl p-10 shadow-2xs flex flex-col items-center justify-center text-center">
+      <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <p class="text-sm text-muted-foreground-1">SLA data not yet available. The ETL pipeline runs at midnight UTC.</p>
+    </div>
+
+    <div th:if="${slaMetrics != null and not #lists.isEmpty(slaMetrics)}">
+
+      <!-- Compliance grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div th:each="m : ${slaMetrics}" class="bg-card border border-card-line rounded-xl p-4 shadow-2xs">
+          <p class="text-xs font-bold uppercase tracking-wide text-muted-foreground-2" th:text="${m.category}"></p>
+          <p class="text-xs text-muted-foreground-2 mb-3" th:text="${m.priority}"></p>
+          <p class="text-3xl font-bold leading-none mb-2"
+             th:classappend="${m.complianceRatePct >= 90} ? 'text-green-600' : (${m.complianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+             th:text="|${m.complianceRatePct}%|"></p>
+          <div class="h-1 bg-muted-hover rounded-full overflow-hidden mb-2">
+            <div class="h-full rounded-full"
+                 th:classappend="${m.complianceRatePct >= 90} ? 'bg-green-500' : (${m.complianceRatePct >= 70} ? 'bg-amber-500' : 'bg-red-500')"
+                 th:style="'width: ' + ${m.complianceRatePct} + '%'"></div>
+          </div>
+          <div class="flex justify-between text-xs text-muted-foreground-2">
+            <span th:text="|${m.totalTickets} tickets|"></span>
+            <span th:text="|${m.avgResolutionHours}h avg|"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resolution hours chart -->
+      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4">Avg Resolution Hours by Category &amp; Priority</h3>
+        <canvas id="slaChart" height="90"></canvas>
+      </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+      "use strict";
+      const slaMetrics = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${slaMetrics}]]*/ null);
+      (function(){
+        if (typeof Chart === 'undefined' || !slaMetrics.length) return;
+        const values = slaMetrics.map(function(m){ return parseFloat(m.avgResolutionHours) || 0; });
+        new Chart(document.getElementById('slaChart'), {
+          type: 'bar',
+          data: { labels: slaMetrics.map(function(m){ return m.category + ' / ' + m.priority; }), datasets: [{ label: 'Avg Resolution Hours', data: values, backgroundColor: values.map(function(v){ return v < 12 ? '#16a34a' : v < 36 ? '#d97706' : '#dc2626'; }), borderRadius: 4, borderSkipped: false }] },
+          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { callback: function(v){ return v + 'h'; } } }, y: { grid: { display: false } } } },
+        });
+      })();
+    </script>
+
+  </div>
+</body>
+</html>
+

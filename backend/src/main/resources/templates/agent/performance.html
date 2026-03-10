@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+<head><title>My Performance</title></head>
+<body>
+  <div th:fragment="content">
+
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground">My Performance</h2>
+      <p class="text-sm text-muted-foreground-1">Your SLA compliance and resolution stats over time.</p>
+    </div>
+
+    <!-- No data state -->
+    <div th:if="${weekHistory == null or #lists.isEmpty(weekHistory)}"
+         class="bg-card border border-card-line rounded-xl p-8 shadow-2xs flex flex-col items-center justify-center text-center">
+      <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+      </svg>
+      <p class="text-sm text-muted-foreground-1">No performance data yet.</p>
+      <p class="text-xs text-muted-foreground-2 mt-1">The ETL pipeline runs at midnight UTC.</p>
+    </div>
+
+    <div th:if="${weekHistory != null and not #lists.isEmpty(weekHistory)}">
+
+      <!-- KPI summary for latest week -->
+      <div th:each="w, wStat : ${weekHistory}" th:if="${wStat.first}">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Assigned</p>
+            <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="${w.ticketsAssigned}">—</p>
+            <p class="text-xs text-muted-foreground-2 mt-1">This week</p>
+          </div>
+          <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-green-500"></div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved</p>
+            <p class="text-3xl font-bold text-green-600 leading-none mt-1" th:text="${w.ticketsResolved}">—</p>
+            <p class="text-xs text-muted-foreground-2 mt-1">This week</p>
+          </div>
+          <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+                 th:classappend="${w.slaComplianceRatePct >= 90} ? 'bg-green-500' : (${w.slaComplianceRatePct >= 70} ? 'bg-amber-500' : 'bg-red-500')"></div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">SLA Compliance</p>
+            <p class="text-3xl font-bold leading-none mt-1"
+               th:classappend="${w.slaComplianceRatePct >= 90} ? 'text-green-600' : (${w.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+               th:text="|${w.slaComplianceRatePct}%|">—</p>
+            <p class="text-xs text-muted-foreground-2 mt-1">Target: 90%</p>
+          </div>
+          <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Avg Resolution</p>
+            <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="|${w.avgResolutionHours}h|">—</p>
+            <p class="text-xs text-muted-foreground-2 mt-1">Mean hours</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trend charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4">SLA Compliance Trend</h3>
+          <canvas id="slaChart" height="160"></canvas>
+        </div>
+        <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4">Tickets Resolved per Week</h3>
+          <canvas id="resolvedChart" height="160"></canvas>
+        </div>
+      </div>
+
+      <!-- Weekly history table -->
+      <div class="bg-card border border-card-line rounded-xl shadow-2xs">
+        <div class="px-5 py-4 border-b border-card-line">
+          <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2">Weekly Breakdown</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-card-line">
+            <thead class="bg-muted-hover">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Week</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Assigned</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">SLA Compliance</th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Avg Resolution</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-card-line">
+              <tr th:each="w : ${weekHistory}" class="hover:bg-muted-hover transition-colors">
+                <td class="px-5 py-3.5 text-sm text-foreground" th:text="${w.weekStart}"></td>
+                <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${w.ticketsAssigned}"></td>
+                <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${w.ticketsResolved}"></td>
+                <td class="px-5 py-3.5 text-sm font-semibold"
+                    th:classappend="${w.slaComplianceRatePct >= 90} ? 'text-green-600' : (${w.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+                    th:text="|${w.slaComplianceRatePct}%|"></td>
+                <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="|${w.avgResolutionHours}h|"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+      "use strict";
+      const weekHistory = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${weekHistory}]]*/ null);
+
+      (function () {
+        if (typeof Chart === 'undefined' || !weekHistory.length) return;
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        const labels = weekHistory.map(function(w){ return 'Wk ' + w.weekStart; });
+
+        new Chart(document.getElementById('slaChart'), {
+          type: 'line',
+          data: { labels: labels, datasets: [{ label: 'SLA %', data: weekHistory.map(function(w){ return parseFloat(w.slaComplianceRatePct) || 0; }), borderColor: '#2563eb', backgroundColor: '#2563eb1a', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 4 }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { callback: function(v){ return v + '%'; } } }, x: { grid: { display: false } } } },
+        });
+
+        new Chart(document.getElementById('resolvedChart'), {
+          type: 'bar',
+          data: { labels: labels, datasets: [{ label: 'Resolved', data: weekHistory.map(function(w){ return w.ticketsResolved || 0; }), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }] },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
+        });
+      })();
+    </script>
+
+  </div>
+</body>
+</html>
+

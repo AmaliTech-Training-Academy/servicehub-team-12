@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
+
+<head>
+  <title>Agent Dashboard</title>
+</head>
+
+<body>
+  <div th:fragment="content">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <h2 class="text-2xl font-semibold text-foreground" th:text="|Welcome back, ${agentName}|">Welcome back</h2>
+      <p class="text-sm text-muted-foreground-1">Your performance this week.</p>
+    </div>
+
+    <!-- KPI Cards (shown when ETL data exists) -->
+    <div th:if="${not #lists.isEmpty(currentWeek)}" th:each="week : ${currentWeek}">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Assigned This Week</p>
+          <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="${week.ticketsAssigned}">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">Tickets in your queue</p>
+        </div>
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-green-500"></div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved This Week</p>
+          <p class="text-3xl font-bold text-green-600 leading-none mt-1" th:text="${week.ticketsResolved}">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">Closed by you</p>
+        </div>
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden"
+             th:classappend="${week.slaComplianceRatePct >= 90} ? '' : (${week.slaComplianceRatePct >= 70} ? '' : '')">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+               th:classappend="${week.slaComplianceRatePct >= 90} ? 'bg-green-500' : (${week.slaComplianceRatePct >= 70} ? 'bg-amber-500' : 'bg-red-500')">
+          </div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">My SLA Compliance</p>
+          <p class="text-3xl font-bold leading-none mt-1"
+             th:classappend="${week.slaComplianceRatePct >= 90} ? 'text-green-600' : (${week.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+             th:text="|${week.slaComplianceRatePct}%|">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">Target: 90%</p>
+        </div>
+
+        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Avg Resolution Time</p>
+          <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="|${week.avgResolutionHours}h|">—</p>
+          <p class="text-xs text-muted-foreground-2 mt-1">Mean hours to resolve</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- No-data state -->
+    <div th:if="${#lists.isEmpty(currentWeek)}"
+         class="bg-card border border-card-line rounded-xl p-8 shadow-2xs mb-6 flex flex-col items-center justify-center text-center">
+      <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <p class="text-sm text-muted-foreground-1">Your stats for this week aren't available yet.</p>
+      <p class="text-xs text-muted-foreground-2 mt-1">The ETL pipeline runs at midnight UTC — check back tomorrow.</p>
+    </div>
+
+    <!-- At-risk tickets panel -->
+    <div th:if="${not #lists.isEmpty(atRiskTickets)}"
+         class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+      <div class="flex items-center gap-2 mb-3">
+        <svg class="size-4 text-amber-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+        </svg>
+        <h3 class="text-xs font-bold uppercase tracking-widest text-amber-700">Your tickets breaching SLA within 2 hours</h3>
+        <span class="ms-auto inline-flex items-center py-0.5 px-2 rounded-full text-xs font-bold bg-amber-500 text-white"
+              th:text="${#lists.size(atRiskTickets)}"></span>
+      </div>
+      <div class="space-y-2">
+        <div th:each="ticket : ${atRiskTickets}"
+             class="flex items-center justify-between bg-card border-l-4 border-amber-400 rounded-lg px-4 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-foreground" th:text="${ticket.title}"></span>
+            <span class="inline-flex items-center py-0.5 px-2 rounded text-xs font-bold uppercase tracking-wide"
+                  th:classappend="${ticket.priority == 'CRITICAL'} ? 'bg-red-600 text-white'    :
+                                   (${ticket.priority == 'HIGH'}     ? 'bg-amber-500 text-white'  :
+                                   (${ticket.priority == 'MEDIUM'}   ? 'bg-blue-500 text-white'   : 'bg-surface-1 text-muted-foreground-2'))"
+                  th:text="${ticket.priority}"></span>
+          </div>
+          <span class="text-xs text-muted-foreground-1">
+            Deadline <strong th:text="${#temporals.format(ticket.slaDeadline, 'HH:mm')}"></strong>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          My SLA Compliance — Last 4 Weeks
+        </h3>
+        <div th:if="${#lists.isEmpty(weekTrend)}" class="flex flex-col items-center justify-center py-8 text-center">
+          <svg class="size-8 text-muted-foreground-2 opacity-30 mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          <p class="text-xs text-muted-foreground-2">Not enough data yet for a trend.</p>
+        </div>
+        <canvas th:if="${not #lists.isEmpty(weekTrend)}" id="complianceTrend" height="160"></canvas>
+      </div>
+
+      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          Tickets Resolved — Last 4 Weeks
+        </h3>
+        <div th:if="${#lists.isEmpty(weekTrend)}" class="flex flex-col items-center justify-center py-8 text-center">
+          <svg class="size-8 text-muted-foreground-2 opacity-30 mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+          <p class="text-xs text-muted-foreground-2">Not enough data yet for a trend.</p>
+        </div>
+        <canvas th:if="${not #lists.isEmpty(weekTrend)}" id="resolvedTrend" height="160"></canvas>
+      </div>
+
+    </div>
+
+    <p class="text-xs text-muted-foreground-2 text-end">Analytics refreshed nightly at midnight UTC</p>
+
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script th:inline="javascript">
+    "use strict";
+    const weekTrend = /*[[${weekTrend}]]*/ [];
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    (function buildComplianceTrend() {
+      const el = document.getElementById('complianceTrend');
+      if (!el || !weekTrend.length) return;
+      new Chart(el, {
+        type: 'line',
+        data: {
+          labels: weekTrend.map(w => 'Wk ' + w.weekStart),
+          datasets: [{ label: 'SLA Compliance %', data: weekTrend.map(w => parseFloat(w.slaComplianceRatePct) || 0), borderColor: '#2563eb', backgroundColor: '#2563eb1a', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#2563eb' }],
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } },
+      });
+    })();
+
+    (function buildResolvedTrend() {
+      const el = document.getElementById('resolvedTrend');
+      if (!el || !weekTrend.length) return;
+      new Chart(el, {
+        type: 'bar',
+        data: {
+          labels: weekTrend.map(w => 'Wk ' + w.weekStart),
+          datasets: [{ label: 'Tickets Resolved', data: weekTrend.map(w => w.ticketsResolved || 0), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }],
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
+      });
+    })();
+  </script>
+</body>
+
+</html>
+
