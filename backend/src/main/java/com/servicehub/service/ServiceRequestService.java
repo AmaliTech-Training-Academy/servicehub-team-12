@@ -11,6 +11,8 @@ public interface ServiceRequestService {
 
     List<ServiceRequestResponse> findAll();
 
+    List<ServiceRequestResponse> findAllByRequesterId(UUID requesterId);
+
     ServiceRequestResponse findById(UUID id);
 
     ServiceRequestResponse update(UUID id, ServiceRequestUpsertRequest request);

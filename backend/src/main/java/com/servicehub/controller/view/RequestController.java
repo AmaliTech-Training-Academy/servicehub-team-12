@@ -1,12 +1,15 @@
 package com.servicehub.controller.view;
 
 import com.servicehub.dto.ServiceRequestForm;
+import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.mapper.ServiceRequestMapper;
+import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.User;
 import com.servicehub.repository.UserRepository;
 import com.servicehub.service.ServiceRequestService;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,10 +32,11 @@ public class RequestController {
     @GetMapping
     @SuppressWarnings("unused")
     public String myRequests(Model model,
+            Principal principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status) {
         model.addAttribute("userRole", "USER");
-        model.addAttribute("tickets", Collections.emptyList());
+        model.addAttribute("tickets", getCurrentUserRequests(principal, q, status));
         return "requests/list";
     }
 
@@ -68,7 +72,8 @@ public class RequestController {
         }
 
         try {
-            serviceRequestService.create(serviceRequestMapper.toCreateRequest(form, requesterId));
+            var req = serviceRequestMapper.toCreateRequest(form, requesterId);
+            serviceRequestService.create(req);
             redirectAttributes.addFlashAttribute("success", "Your request has been submitted successfully.");
             return "redirect:/requests/new";
         } catch (Exception e) {
@@ -115,5 +120,33 @@ public class RequestController {
         // TODO: assign ticket to current agent via service layer
         redirectAttributes.addFlashAttribute("success", "Ticket picked up successfully.");
         return "redirect:/requests/assigned";
+    }
+
+    private List<ServiceRequestResponse> getCurrentUserRequests(Principal principal, String q, String status) {
+        var requesterId = userRepository.findByEmail(principal.getName()).map(User::getId).orElse(null);
+        if (requesterId == null) {
+            return Collections.emptyList();
+        }
+
+        String normalizedQuery = q == null ? "" : q.trim().toLowerCase();
+        RequestStatus requestedStatus = parseStatus(status);
+
+        return serviceRequestService.findAllByRequesterId(requesterId).stream()
+                .filter(ticket -> normalizedQuery.isBlank()
+                        || (ticket.getTitle() != null && ticket.getTitle().toLowerCase().contains(normalizedQuery)))
+                .filter(ticket -> requestedStatus == null || ticket.getStatus() == requestedStatus)
+                .toList();
+    }
+
+    private RequestStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return RequestStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }

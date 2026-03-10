@@ -62,6 +62,14 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ServiceRequestResponse> findAllByRequesterId(UUID requesterId) {
+        return serviceRequestRepository.findByRequesterIdOrderByCreatedAtDesc(requesterId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ServiceRequestResponse findById(UUID id) {
         return toResponse(getRequestOrThrow(id));
     }
