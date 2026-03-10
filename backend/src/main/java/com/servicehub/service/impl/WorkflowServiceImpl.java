@@ -2,8 +2,15 @@ package com.servicehub.service.impl;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.UUID;
 
+import com.servicehub.exception.InvalidTransitionException;
+import com.servicehub.exception.ResourceNotFoundException;
+import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.ServiceRequest;
+import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.service.ServiceRequestService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,11 +20,14 @@ import com.servicehub.service.WorkflowService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkflowServiceImpl implements WorkflowService {
+
+    private final ServiceRequestMapper serviceRequestMapper;
 
     private static final Map<RequestStatus, RequestStatus> NEXT_STATUS = Map.of(
             RequestStatus.OPEN, RequestStatus.ASSIGNED,
@@ -26,18 +36,23 @@ public class WorkflowServiceImpl implements WorkflowService {
             RequestStatus.RESOLVED, RequestStatus.CLOSED
     );
 
+    private final ServiceRequestService serviceRequestService;
+    private final ServiceRequestRepository serviceRequestRepository;
+
     @Override
     @Transactional
-    public void transitionStatus(ServiceRequest serviceRequest) {
+    public void transitionStatus(UUID requestId) {
+
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId).orElseThrow(
+                () -> new ResourceNotFoundException("Service request not found: " + requestId + " was not found")
+        );
 
         RequestStatus currentStatus = serviceRequest.getStatus();
-
+        System.out.println("current " + currentStatus);
         RequestStatus nextStatus = NEXT_STATUS.get(currentStatus);
 
         if (nextStatus == null) {
-            throw new IllegalStateException(
-                    "No valid transition from status: " + currentStatus
-            );
+            throw new InvalidTransitionException("Invalid transition from " + currentStatus);
         }
 
         serviceRequest.setStatus(nextStatus);
@@ -47,7 +62,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         serviceRequest.setUpdatedAt(OffsetDateTime.now());
 
         log.info("Successfully transitioned request {} from {} to {}",
-                serviceRequest, currentStatus, nextStatus);
+                requestId, currentStatus, nextStatus);
     }
 
     /**
