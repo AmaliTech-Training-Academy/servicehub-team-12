@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# IAM Module – Variables
+# Secrets Manager Module – Variables
 # ──────────────────────────────────────────────────────────────────────────────
 
 variable "project_name" {
@@ -12,14 +12,26 @@ variable "environment" {
   type        = string
 }
 
-variable "s3_dags_bucket_arn" {
-  description = "ARN of the S3 bucket storing Airflow DAGs."
+variable "db_username" {
+  description = "The master username for the RDS database."
   type        = string
 }
 
-variable "ecr_repository_arn" {
-  description = "ARN of the ECR repository for the backend image."
+variable "db_name" {
+  description = "The name of the default database."
   type        = string
+}
+
+variable "db_host" {
+  description = "The hostname/endpoint of the RDS database."
+  type        = string
+  default     = "pending"
+}
+
+variable "db_port" {
+  description = "The port of the RDS database."
+  type        = number
+  default     = 5432
 }
 
 variable "tags" {
