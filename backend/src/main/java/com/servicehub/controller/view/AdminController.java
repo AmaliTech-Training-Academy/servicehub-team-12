@@ -102,22 +102,6 @@ public class AdminController {
         return "redirect:/admin/roles";
     }
 
-    // ── Reports ──────────────────────────────────────────────────
-
-    @GetMapping("/reports/sla")
-    public String reportsSla(Model model, @AuthenticationPrincipal User principal) {
-        addCommonAttributes(model, principal);
-        model.addAttribute("slaMetrics", Collections.emptyList());
-        return "admin/reports-sla";
-    }
-
-    @GetMapping("/reports/performance")
-    public String reportsPerformance(Model model, @AuthenticationPrincipal User principal) {
-        addCommonAttributes(model, principal);
-        model.addAttribute("leaderboard", Collections.emptyList());
-        return "admin/reports-performance";
-    }
-
     // ── Settings ─────────────────────────────────────────────────
 
     @GetMapping("/settings")
