@@ -32,9 +32,9 @@ on:
                 required: false
                 default: false
         outputs:
-            image_tag:
-                description: Short SHA tag used for Docker image
-                value: ${{ jobs.build-image.outputs.image_tag }}
+          image_tag:
+            description: Short SHA tag used for Docker image
+            value: ${{ jobs['build-and-push-image'].outputs.image_tag }}
 
 jobs:
     checkstyle:
@@ -101,14 +101,18 @@ jobs:
                   restore-keys: |
                       uv-${{ runner.os }}-
 
+            - name: Set up uv
+              uses: astral-sh/setup-uv@v5
+              with:
+                  version: "0.6.7"
+
             - name: Install dependencies
               working-directory: data-engineering
               run: |
-                  curl -LsSf https://astral.sh/uv/install.sh | sh
-                  $HOME/.cargo/bin/uv venv
+                  uv venv
                   source .venv/bin/activate
-                  $HOME/.cargo/bin/uv pip install -r requirements.txt
-                  $HOME/.cargo/bin/uv pip install flake8 pytest
+                  uv pip install -r requirements.txt
+                  uv pip install flake8 pytest
 
             - name: Lint with flake8
               working-directory: data-engineering
