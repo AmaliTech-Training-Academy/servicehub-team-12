@@ -4,15 +4,28 @@
 <body>
   <div th:fragment="content">
 
-    <div class="mb-6">
-      <h2 class="text-2xl font-semibold text-foreground">Agents</h2>
-      <p class="text-sm text-muted-foreground-1">Manage agent accounts and workloads.</p>
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-semibold text-foreground">Agents</h2>
+        <p class="text-sm text-muted-foreground-1">Manage agent accounts and workloads.</p>
+      </div>
     </div>
 
     <div th:if="${success}" class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-5">
       <svg class="size-4 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       <span th:text="${success}"></span>
     </div>
+
+    <!-- Search bar -->
+    <form method="get" th:action="@{/admin/agents}" class="mb-4 flex gap-2">
+      <input type="text" name="q" th:value="${param.q}"
+             placeholder="Search by name or email…"
+             class="flex-1 text-sm bg-card border border-card-line rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground-2 focus:outline-none focus:ring-2 focus:ring-primary/40"/>
+      <button type="submit"
+              class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+        Search
+      </button>
+    </form>
 
     <div class="bg-card border border-card-line rounded-xl shadow-2xs">
 
@@ -22,6 +35,7 @@
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
         </svg>
         <p class="text-sm text-muted-foreground-1">No agents found.</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Create a user and assign the Agent role to see them here.</p>
       </div>
 
       <div th:if="${agents != null and not #lists.isEmpty(agents)}" class="overflow-x-auto">
@@ -30,6 +44,7 @@
             <tr>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Name</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Email</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Department</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Open Tickets</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">SLA (this week)</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Status</th>
@@ -38,38 +53,65 @@
           </thead>
           <tbody class="divide-y divide-card-line">
             <tr th:each="a : ${agents}" class="hover:bg-muted-hover transition-colors">
+
+              <!-- Name + avatar -->
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
                   <div class="shrink-0 flex items-center justify-center size-8 rounded-full bg-primary text-primary-foreground text-xs font-bold select-none"
-                       th:text="${#strings.toUpperCase(#strings.substring(a.firstName,0,1) + #strings.substring(a.lastName,0,1))}">AB</div>
+                       th:with="initials=${#strings.toUpperCase(
+                           (#strings.isEmpty(a.firstName) ? '?' : #strings.substring(a.firstName,0,1))
+                           + (#strings.isEmpty(a.lastName)  ? '' : #strings.substring(a.lastName,0,1))
+                       )}"
+                       th:text="${initials}">AB</div>
                   <p class="text-sm font-medium text-foreground" th:text="|${a.firstName} ${a.lastName}|"></p>
                 </div>
               </td>
+
+              <!-- Email -->
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${a.email}"></td>
-              <td class="px-5 py-3.5 text-sm font-semibold text-foreground" th:text="${a.openTicketCount} ?: '0'"></td>
+
+              <!-- Department -->
+              <td class="px-5 py-3.5 text-sm text-muted-foreground-1"
+                  th:text="${a.department != null and not #strings.isEmpty(a.department)} ? ${a.department} : '—'"></td>
+
+              <!-- Open tickets -->
+              <td class="px-5 py-3.5 text-sm font-semibold text-foreground"
+                  th:text="${a.openTicketCount} ?: '0'"></td>
+
+              <!-- SLA compliance — null-safe comparison -->
               <td class="px-5 py-3.5 text-sm font-semibold"
-                  th:classappend="${a.slaComplianceRatePct >= 90} ? 'text-green-600' : (${a.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
-                  th:text="${a.slaComplianceRatePct != null} ? |${a.slaComplianceRatePct}%| : '—'"></td>
+                  th:classappend="${a.slaComplianceRatePct != null and a.slaComplianceRatePct >= 90 ? 'text-green-600' : (a.slaComplianceRatePct != null and a.slaComplianceRatePct >= 70 ? 'text-amber-600' : 'text-red-600')}"
+                  th:text="${a.slaComplianceRatePct != null ? a.slaComplianceRatePct + '%' : '—'}"></td>
+
+              <!-- Status badge -->
               <td class="px-5 py-3.5">
                 <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold"
                       th:classappend="${a.active} ? 'bg-green-50 text-green-700' : 'bg-surface-1 text-muted-foreground-2'"
                       th:text="${a.active} ? 'Active' : 'Inactive'"></span>
               </td>
-              <td class="px-5 py-3.5 text-right flex items-center justify-end gap-3">
-                <a th:href="@{/admin/agents/{id}(id=${a.id})}"
-                   class="text-xs font-medium text-primary hover:underline">Edit</a>
-                <form th:action="@{/admin/agents/{id}/toggle(id=${a.id})}" method="post">
-                  <button type="submit"
-                          th:text="${a.active} ? 'Deactivate' : 'Activate'"
-                          class="text-xs font-medium text-muted-foreground-1 hover:underline"></button>
-                </form>
+
+              <!-- Actions -->
+              <td class="px-5 py-3.5 text-right">
+                <div class="flex items-center justify-end gap-3">
+                  <form th:action="@{/admin/agents/{id}/toggle(id=${a.id})}" method="post">
+                    <button type="submit"
+                            th:text="${a.active} ? 'Deactivate' : 'Activate'"
+                            class="text-xs font-medium text-muted-foreground-1 hover:text-foreground hover:underline transition-colors"></button>
+                  </form>
+                </div>
               </td>
+
             </tr>
           </tbody>
         </table>
       </div>
 
     </div>
+
+    <!-- Agent count footer -->
+    <p th:if="${agents != null and not #lists.isEmpty(agents)}"
+       class="mt-3 text-xs text-muted-foreground-2 text-end"
+       th:text="|${#lists.size(agents)} agent(s) found|"></p>
 
   </div>
 </body>
