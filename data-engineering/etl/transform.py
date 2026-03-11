@@ -15,7 +15,10 @@ from logging_config import get_logger
 logger = get_logger(__name__)
 
 
-def transform_sla_metrics(requests_df: pd.DataFrame, sla_df: pd.DataFrame) -> pd.DataFrame:
+def transform_sla_metrics(
+    requests_df: pd.DataFrame,
+    sla_df: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Calculate SLA compliance metrics per category and priority based on
     the analytics_sla_metrics contract.
@@ -41,7 +44,9 @@ def transform_sla_metrics(requests_df: pd.DataFrame, sla_df: pd.DataFrame) -> pd
     resolved_mask = working["status"].isin(["RESOLVED", "CLOSED"])
     resolved = working[resolved_mask].copy()
     if resolved.empty:
-        logger.info("No resolved requests available for SLA metrics. Skipping.")
+        logger.info(
+            "No resolved requests available for SLA metrics. Skipping.",
+        )
         return pd.DataFrame()
 
     resolved["resolution_hours"] = (
@@ -63,7 +68,10 @@ def transform_sla_metrics(requests_df: pd.DataFrame, sla_df: pd.DataFrame) -> pd
         responded["response_hours"] = (
             responded["first_response_at"] - responded["created_at"]
         ).dt.total_seconds() / 3600
-        responded_group = responded.groupby(["category", "priority"], as_index=True)
+        responded_group = responded.groupby(
+            ["category", "priority"],
+            as_index=True,
+        )
         avg_response_hours = responded_group["response_hours"].mean().rename(
             "avg_response_hours"
         )
@@ -80,15 +88,20 @@ def transform_sla_metrics(requests_df: pd.DataFrame, sla_df: pd.DataFrame) -> pd
     else:
         summary["avg_response_hours"] = pd.NA
 
-    summary[["resolved_tickets", "breached_tickets"]] = summary[
-        ["resolved_tickets", "breached_tickets"]
-    ].fillna(0).astype(int)
+    summary[["resolved_tickets", "breached_tickets"]] = (
+        summary[["resolved_tickets", "breached_tickets"]]
+        .fillna(0)
+        .astype(int)
+    )
 
     # Compliance rate = tickets resolved within SLA / resolved_tickets * 100
     mask = summary["resolved_tickets"] > 0
     summary["compliance_rate_pct"] = pd.NA
     summary.loc[mask, "compliance_rate_pct"] = (
-        (summary.loc[mask, "resolved_tickets"] - summary.loc[mask, "breached_tickets"])
+        (
+            summary.loc[mask, "resolved_tickets"]
+            - summary.loc[mask, "breached_tickets"]
+        )
         / summary.loc[mask, "resolved_tickets"]
         * 100
     )
@@ -97,7 +110,10 @@ def transform_sla_metrics(requests_df: pd.DataFrame, sla_df: pd.DataFrame) -> pd
 
     summary = summary.reset_index()
 
-    logger.info("Computed SLA metrics for %d category/priority groups", len(summary))
+    logger.info(
+        "Computed SLA metrics for %d category/priority groups",
+        len(summary),
+    )
     return summary[
         [
             "category",
@@ -115,10 +131,13 @@ def transform_sla_metrics(requests_df: pd.DataFrame, sla_df: pd.DataFrame) -> pd
 
 def transform_daily_volume(requests_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute daily request volumes based on the analytics_daily_volume contract.
+    Compute daily request volumes based on the analytics_daily_volume
+    contract.
     """
     if requests_df.empty:
-        logger.info("No service requests available for daily volume. Skipping.")
+        logger.info(
+            "No service requests available for daily volume. Skipping.",
+        )
         return pd.DataFrame()
 
     working = requests_df.copy()
@@ -138,7 +157,8 @@ def transform_daily_volume(requests_df: pd.DataFrame) -> pd.DataFrame:
     result["last_updated_at"] = now_ts
 
     logger.info(
-        "Computed daily volume for %d report/category/priority/status groups", len(result)
+        "Computed daily volume for %d report/category/priority/status groups",
+        len(result),
     )
     return result[
         [
@@ -150,5 +170,3 @@ def transform_daily_volume(requests_df: pd.DataFrame) -> pd.DataFrame:
             "last_updated_at",
         ]
     ]
-
-

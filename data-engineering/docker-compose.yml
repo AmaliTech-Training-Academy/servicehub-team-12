@@ -1,7 +1,7 @@
 x-airflow-common:
   &airflow-common
   build:
-    context: ./data-engineering
+    context: .
     dockerfile: Dockerfile
   env_file:
     - .env
@@ -9,8 +9,8 @@ x-airflow-common:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${AIRFLOW_DB}
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${AIRFLOW_DB}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ""
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
@@ -20,18 +20,17 @@ x-airflow-common:
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
     PYTHONPATH: /opt/airflow
-    DB_HOST: postgres
-    DB_PORT: "5432"
-    DB_NAME: ${POSTGRES_DB}
-    DB_USER: ${POSTGRES_USER}
-    DB_PASSWORD: ${POSTGRES_PASSWORD}
-    LOG_LEVEL: INFO
+    DB_HOST: ${DB_HOST}
+    DB_PORT: ${DB_PORT}
+    DB_NAME: ${DB_NAME}
+    DB_USER: ${DB_USER}
+    DB_PASSWORD: ${DB_PASSWORD}
+    LOG_LEVEL: ${LOG_LEVEL}
   volumes:
-    - ./data-engineering/dags:/opt/airflow/dags
-    - airflow_logs:/opt/airflow/logs
-    - ./data-engineering/config:/opt/airflow/config
-    - ./data-engineering/plugins:/opt/airflow/plugins
-    - ./data-engineering:/opt/airflow
+    - ./dags:/opt/airflow/dags
+    - de_airflow_logs:/opt/airflow/logs
+    - ./config:/opt/airflow/config
+    - ./plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -41,23 +40,6 @@ x-airflow-common:
       condition: service_healthy
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: servicehub-db
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./data-engineering/postgres-init:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:7.2-bookworm
@@ -70,21 +52,6 @@ services:
       retries: 50
       start_period: 30s
     restart: always
-
-  backend:
-    build: ./backend
-    container_name: servicehub-backend
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      SERVER_PORT: 8080
-
-    ports:
-      - "${BACKEND_PORT}:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   airflow-apiserver:
     <<: *airflow-common
@@ -179,7 +146,7 @@ services:
         if [[ -z "$${AIRFLOW_UID}" ]]; then
           echo
           echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
-          echo "For local development, set AIRFLOW_UID in .env to avoid root-owned files."
+          echo "For local development, set AIRFLOW_UID in ../.env to avoid root-owned files."
           echo
           export AIRFLOW_UID=$$(id -u)
         fi
@@ -214,11 +181,11 @@ services:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: "true"
       _AIRFLOW_WWW_USER_CREATE: "true"
-      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-airflow}
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
     user: "0:0"
     restart: "no"
 
 volumes:
-  pgdata:
-  airflow_logs:
+  de_pgdata:
+  de_airflow_logs:

@@ -17,9 +17,12 @@ def _base_requests_frame() -> pd.DataFrame:
             {
                 "id": 1,
                 "title": "Reset password",
-                "category": "IT_SUPPORT",
+                "category": "IT",
                 "priority": "HIGH",
                 "status": "OPEN",
+                "sla_deadline": "2024-01-01T14:00:00Z",
+                "first_response_at": None,
+                "is_sla_breached": False,
                 "created_at": "2024-01-01T10:00:00Z",
                 "resolved_at": "2024-01-01T12:00:00Z",
             }
@@ -81,7 +84,7 @@ def test_validate_and_split_sla_policies_happy_path():
         [
             {
                 "id": 1,
-                "category": "IT_SUPPORT",
+                "category": "IT",
                 "priority": "LOW",
             }
         ]
@@ -96,7 +99,7 @@ def test_validate_and_split_sla_policies_invalid_priority_quarantines():
         [
             {
                 "id": 1,
-                "category": "IT_SUPPORT",
+                "category": "IT",
                 "priority": "P1",
             }
         ]
@@ -104,4 +107,3 @@ def test_validate_and_split_sla_policies_invalid_priority_quarantines():
     valid, invalid = validate_and_split_sla_policies(df)
     assert valid.empty
     assert len(invalid) == 1
-
