@@ -134,38 +134,39 @@
 
   </div>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script th:inline="javascript">
     "use strict";
     const weekTrend = /*[[${weekTrend}]]*/ [];
-    Chart.defaults.font.family = "'Inter', sans-serif";
 
-    (function buildComplianceTrend() {
-      const el = document.getElementById('complianceTrend');
-      if (!el || !weekTrend.length) return;
-      new Chart(el, {
-        type: 'line',
-        data: {
-          labels: weekTrend.map(w => 'Wk ' + w.weekStart),
-          datasets: [{ label: 'SLA Compliance %', data: weekTrend.map(w => parseFloat(w.slaComplianceRatePct) || 0), borderColor: '#2563eb', backgroundColor: '#2563eb1a', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#2563eb' }],
-        },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } },
-      });
-    })();
+    window.addEventListener('load', function () {
+      Chart.defaults.font.family = "'Inter', sans-serif";
 
-    (function buildResolvedTrend() {
-      const el = document.getElementById('resolvedTrend');
-      if (!el || !weekTrend.length) return;
-      new Chart(el, {
-        type: 'bar',
-        data: {
-          labels: weekTrend.map(w => 'Wk ' + w.weekStart),
-          datasets: [{ label: 'Tickets Resolved', data: weekTrend.map(w => w.ticketsResolved || 0), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }],
-        },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
-      });
-    })();
+      (function buildComplianceTrend() {
+        const el = document.getElementById('complianceTrend');
+        if (!el || !weekTrend.length) return;
+        new Chart(el, {
+          type: 'line',
+          data: {
+            labels: weekTrend.map(w => 'Wk ' + w.weekStart),
+            datasets: [{ label: 'SLA Compliance %', data: weekTrend.map(w => parseFloat(w.slaComplianceRatePct) || 0), borderColor: '#2563eb', backgroundColor: '#2563eb1a', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#2563eb' }],
+          },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } },
+        });
+      })();
+
+      (function buildResolvedTrend() {
+        const el = document.getElementById('resolvedTrend');
+        if (!el || !weekTrend.length) return;
+        new Chart(el, {
+          type: 'bar',
+          data: {
+            labels: weekTrend.map(w => 'Wk ' + w.weekStart),
+            datasets: [{ label: 'Tickets Resolved', data: weekTrend.map(w => w.ticketsResolved || 0), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }],
+          },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
+        });
+      })();
+    }); // end load
   </script>
 </body>
 

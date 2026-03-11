@@ -59,6 +59,7 @@
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Email</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Department</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Role</th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Status</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Joined</th>
               <th class="px-5 py-3"></th>
             </tr>
@@ -67,9 +68,16 @@
             <tr th:each="u : ${users}" class="hover:bg-muted-hover transition-colors">
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
+                  <!-- Avatar: first letter of firstName + first letter of lastName (if present) -->
                   <div class="shrink-0 flex items-center justify-center size-8 rounded-full bg-primary text-primary-foreground text-xs font-bold select-none"
-                       th:text="${#strings.toUpperCase(#strings.substring(u.firstName,0,1) + #strings.substring(u.lastName,0,1))}">JD</div>
-                  <p class="text-sm font-medium text-foreground" th:text="|${u.firstName} ${u.lastName}|"></p>
+                       th:text="${#strings.toUpperCase(
+                                    #strings.substring(u.firstName, 0, 1)
+                                    + (#strings.isEmpty(u.lastName) ? '' : #strings.substring(u.lastName, 0, 1))
+                                  )}">?</div>
+                  <div>
+                    <p class="text-sm font-medium text-foreground" th:text="|${u.firstName} ${u.lastName}|"></p>
+                    <p class="text-xs text-muted-foreground-2" th:text="${u.provider}"></p>
+                  </div>
                 </div>
               </td>
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${u.email}"></td>
@@ -80,15 +88,27 @@
                                        (${u.role == 'AGENT'} ? 'bg-blue-50 text-blue-700' : 'bg-surface-1 text-muted-foreground-2')"
                       th:text="${u.role}"></span>
               </td>
+              <td class="px-5 py-3.5">
+                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold"
+                      th:classappend="${u.active} ? 'bg-green-50 text-green-700' : 'bg-surface-1 text-muted-foreground-2'"
+                      th:text="${u.active} ? 'Active' : 'Inactive'"></span>
+              </td>
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1"
                   th:text="${#temporals.format(u.createdAt, 'dd MMM yyyy')}"></td>
-              <td class="px-5 py-3.5 text-right flex items-center justify-end gap-3">
-                <a th:href="@{/admin/users/{id}(id=${u.id})}"
-                   class="text-xs font-medium text-primary hover:underline">Edit</a>
-                <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post"
-                      onsubmit="return confirm('Delete this user?')">
-                  <button type="submit" class="text-xs font-medium text-red-600 hover:underline">Delete</button>
-                </form>
+              <td class="px-5 py-3.5 text-right">
+                <div class="flex items-center justify-end gap-3">
+                  <!-- Toggle active/inactive -->
+                  <form th:action="@{/admin/users/{id}/toggle(id=${u.id})}" method="post">
+                    <button type="submit"
+                            th:text="${u.active} ? 'Deactivate' : 'Activate'"
+                            class="text-xs font-medium text-amber-600 hover:underline"></button>
+                  </form>
+                  <!-- Delete -->
+                  <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post"
+                        onsubmit="return confirm('Permanently delete this user?')">
+                    <button type="submit" class="text-xs font-medium text-red-600 hover:underline">Delete</button>
+                  </form>
+                </div>
               </td>
             </tr>
           </tbody>

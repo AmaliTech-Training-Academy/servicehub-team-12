@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -72,6 +73,16 @@ public class GlobalAuthExceptionHandler {
         }
         return buildResponse(HttpStatus.BAD_REQUEST, "Validation Failed",
                 "One or more fields failed validation. Please correct the highlighted errors.", fieldErrors);
+    }
+
+    // ── 404 – static resource not found ─────────────────────────────────────
+    // Browsers and devtools probe well-known paths (e.g. /.well-known/…).
+    // Handled here at DEBUG level to avoid ERROR noise in the logs.
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
+        log.debug("Static resource not found: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, "Not Found", "The requested resource was not found.", null);
     }
 
     // ── Fallback ─────────────────────────────────────────────────────────────
