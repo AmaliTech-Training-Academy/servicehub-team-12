@@ -8,4 +8,3 @@ public class ResourceNotFoundException extends AuthException {
         super(resource + " not found.", HttpStatus.NOT_FOUND);
     }
 }
-
