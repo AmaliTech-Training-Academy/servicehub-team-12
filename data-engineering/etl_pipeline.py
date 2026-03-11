@@ -15,7 +15,9 @@ from etl import (
     extract_requests,
     extract_sla_policies,
     load_analytics,
+    transform_agent_performance,
     transform_daily_volume,
+    transform_department_workload,
     transform_sla_metrics,
 )
 from etl.validation import validate_and_split_requests, validate_and_split_sla_policies
@@ -24,6 +26,19 @@ from logging_config import get_logger
 
 
 logger = get_logger(__name__)
+
+
+def _annotate_validation_failure(
+    df: pd.DataFrame,
+    error_message: str,
+) -> pd.DataFrame:
+    if df is None:
+        return pd.DataFrame(columns=["quarantine_reason", "validation_error"])
+
+    invalid_df = df.copy()
+    invalid_df["quarantine_reason"] = "dataset_validation_failed"
+    invalid_df["validation_error"] = error_message
+    return invalid_df
 
 
 def get_engine(database_url: Optional[str] = None) -> Engine:
@@ -50,15 +65,17 @@ def run_pipeline(database_url: Optional[str] = None) -> None:
 
         try:
             valid_requests, invalid_requests = validate_and_split_requests(requests_df)
+        except DataValidationError as exc:
+            logger.error("Request validation failed: %s", exc)
+            valid_requests = pd.DataFrame()
+            invalid_requests = _annotate_validation_failure(requests_df, str(exc))
+
+        try:
             valid_sla, invalid_sla = validate_and_split_sla_policies(sla_df)
         except DataValidationError as exc:
-            logger.error("Dataset-level validation failed: %s", exc)
-            # In this case, treat all rows as invalid and skip analytics, but do not
-            # crash the pipeline.
-            valid_requests = pd.DataFrame()
+            logger.error("SLA policy validation failed: %s", exc)
             valid_sla = pd.DataFrame()
-            invalid_requests = requests_df
-            invalid_sla = sla_df
+            invalid_sla = _annotate_validation_failure(sla_df, str(exc))
 
         # Quarantine invalid rows so that bad data does not block analytics
         try:
@@ -76,10 +93,15 @@ def run_pipeline(database_url: Optional[str] = None) -> None:
         daily_volume = transform_daily_volume(valid_requests)
         load_analytics(daily_volume, "analytics_daily_volume", engine)
 
-        # Future extensions:
-        # - SLA breach detection
-        # - Agent performance metrics
-        # - Department workload analysis
+        agent_performance = transform_agent_performance(valid_requests)
+        load_analytics(agent_performance, "analytics_agent_performance", engine)
+
+        department_workload = transform_department_workload(valid_requests)
+        load_analytics(
+            department_workload,
+            "analytics_department_workload",
+            engine,
+        )
 
         logger.info("ServiceHub ETL pipeline completed successfully")
     except ETLBaseError:
