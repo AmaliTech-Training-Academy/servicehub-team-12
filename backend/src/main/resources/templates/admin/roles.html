@@ -63,7 +63,10 @@
           <tbody class="divide-y divide-card-line">
             <tr th:each="u : ${users}" class="hover:bg-muted-hover transition-colors">
               <td class="px-5 py-3.5">
-                <p class="text-sm font-medium text-foreground" th:text="|${u.firstName} ${u.lastName}|"></p>
+                <div>
+                  <p class="text-sm font-medium text-foreground" th:text="|${u.firstName} ${u.lastName}|"></p>
+                  <p class="text-xs text-muted-foreground-2" th:text="${u.provider}"></p>
+                </div>
               </td>
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${u.email}"></td>
               <td class="px-5 py-3.5">
