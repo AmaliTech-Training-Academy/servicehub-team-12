@@ -63,6 +63,11 @@ variable "access_role_arn" {
   type        = string
 }
 
+variable "secret_arn" {
+  description = "ARN of the Secrets Manager secret for DB password."
+  type        = string
+}
+
 variable "environment_variables" {
   description = "Map of environment variables to set on the App Runner service."
   type        = map(string)
