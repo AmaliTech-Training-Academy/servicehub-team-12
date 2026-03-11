@@ -2,8 +2,6 @@
 Extraction layer for ServiceHub analytics ETL.
 """
 
-from typing import Optional
-
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.engine import Engine

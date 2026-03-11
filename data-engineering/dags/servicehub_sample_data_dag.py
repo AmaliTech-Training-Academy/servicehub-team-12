@@ -1,5 +1,6 @@
 """
-Airflow DAG to support manual loading of sample data for development and testing.
+Airflow DAG to support manual loading of sample data for development and
+testing.
 """
 
 import os
@@ -11,13 +12,18 @@ from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 
 # Ensure the project root is on sys.path so that shared modules can be imported
-PROJECT_ROOT = Path(os.getenv("PYTHONPATH", Path(__file__).resolve().parents[1]))
+PROJECT_ROOT = Path(
+    os.getenv("PYTHONPATH", Path(__file__).resolve().parents[1])
+)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from etl_pipeline import get_engine  # noqa: E402
 from logging_config import get_logger  # noqa: E402
-from sample_data.generator import SampleConfig, load_sample_requests  # noqa: E402
+from sample_data.generator import (  # noqa: E402
+    SampleConfig,
+    load_sample_requests,
+)
 
 logger = get_logger(__name__)
 
