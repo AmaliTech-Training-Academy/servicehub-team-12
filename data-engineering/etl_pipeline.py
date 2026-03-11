@@ -1,74 +1,94 @@
-"""ETL Pipeline for ServiceHub - SLA Analytics & Resolution Metrics"""
+"""ETL Pipeline for ServiceHub - SLA Analytics and Resolution Metrics.
+
+This module provides the orchestration layer. Extraction, transformation,
+and loading logic live in the dedicated `etl` package.
+"""
+
+from typing import Optional
+
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+
 from config import DATABASE_URL
+from etl import (
+    extract_requests,
+    extract_sla_policies,
+    load_analytics,
+    transform_daily_volume,
+    transform_sla_metrics,
+)
+from etl.validation import validate_and_split_requests, validate_and_split_sla_policies
+from exceptions import DataValidationError, ETLBaseError
+from logging_config import get_logger
 
-engine = create_engine(DATABASE_URL)
 
-def extract_requests():
-    query = text("""
-        SELECT sr.id, sr.title, sr.category, sr.priority, sr.status,
-               sr.created_at, sr.updated_at, sr.resolved_at,
-               u.name AS requester_name, d.name AS department_name
-        FROM service_requests sr
-        JOIN users u ON sr.requester_id = u.id
-        LEFT JOIN departments d ON sr.department_id = d.id
-    """)
-    with engine.connect() as conn:
-        return pd.read_sql(query, conn)
+logger = get_logger(__name__)
 
-def extract_sla_policies():
-    query = text("SELECT * FROM sla_policies")
-    with engine.connect() as conn:
-        return pd.read_sql(query, conn)
 
-def transform_sla_metrics(requests_df, sla_df):
-    """Calculate SLA compliance metrics."""
-    if requests_df.empty:
-        return pd.DataFrame()
-    requests_df["created_at"] = pd.to_datetime(requests_df["created_at"])
-    requests_df["resolved_at"] = pd.to_datetime(requests_df["resolved_at"])
-    resolved = requests_df[requests_df["resolved_at"].notna()].copy()
-    if resolved.empty:
-        return pd.DataFrame()
-    resolved["resolution_hours"] = (resolved["resolved_at"] - resolved["created_at"]).dt.total_seconds() / 3600
+def get_engine(database_url: Optional[str] = None) -> Engine:
+    """
+    Create and return a SQLAlchemy engine.
 
-    summary = resolved.groupby(["category", "priority"]).agg(
-        total_resolved=("id", "count"),
-        avg_resolution_hours=("resolution_hours", "mean"),
-        max_resolution_hours=("resolution_hours", "max"),
-    ).reset_index()
-    return summary
+    The database URL can be overridden for testing.
+    """
+    url = database_url or DATABASE_URL
+    return create_engine(url)
 
-def transform_daily_volume(requests_df):
-    """Daily request volume by category."""
-    if requests_df.empty:
-        return pd.DataFrame()
-    requests_df["date"] = pd.to_datetime(requests_df["created_at"]).dt.date
-    return requests_df.groupby(["date", "category"]).size().reset_index(name="request_count")
 
-def load_analytics(df, table_name):
-    df.to_sql(table_name, engine, if_exists="replace", index=False)
-    print(f"Loaded {len(df)} rows into {table_name}")
+def run_pipeline(database_url: Optional[str] = None) -> None:
+    """
+    Run the end-to-end ETL pipeline for ServiceHub analytics.
+    """
+    logger.info("Starting ServiceHub ETL pipeline")
 
-def run_pipeline():
-    print("Starting ServiceHub ETL pipeline...")
-    requests_df = extract_requests()
-    sla_df = extract_sla_policies()
-    print(f"Extracted {len(requests_df)} requests, {len(sla_df)} SLA policies")
+    engine = get_engine(database_url=database_url)
 
-    sla_metrics = transform_sla_metrics(requests_df, sla_df)
-    if not sla_metrics.empty:
-        load_analytics(sla_metrics, "analytics_sla_metrics")
+    try:
+        requests_df = extract_requests(engine)
+        sla_df = extract_sla_policies(engine)
 
-    daily_volume = transform_daily_volume(requests_df)
-    if not daily_volume.empty:
-        load_analytics(daily_volume, "analytics_daily_volume")
+        try:
+            valid_requests, invalid_requests = validate_and_split_requests(requests_df)
+            valid_sla, invalid_sla = validate_and_split_sla_policies(sla_df)
+        except DataValidationError as exc:
+            logger.error("Dataset-level validation failed: %s", exc)
+            # In this case, treat all rows as invalid and skip analytics, but do not
+            # crash the pipeline.
+            valid_requests = pd.DataFrame()
+            valid_sla = pd.DataFrame()
+            invalid_requests = requests_df
+            invalid_sla = sla_df
 
-    # TODO: Add SLA breach detection
-    # TODO: Add agent performance metrics
-    # TODO: Add department workload analysis
-    print("ETL pipeline complete!")
+        # Quarantine invalid rows so that bad data does not block analytics
+        try:
+            if not invalid_requests.empty:
+                load_analytics(invalid_requests, "analytics_invalid_requests", engine)
+            if not invalid_sla.empty:
+                load_analytics(invalid_sla, "analytics_invalid_sla_policies", engine)
+        except ETLBaseError:
+            # If quarantine loading fails, log and continue with the main pipeline
+            logger.exception("Failed to load quarantined data; continuing with valid data only.")
+
+        sla_metrics = transform_sla_metrics(valid_requests, valid_sla)
+        load_analytics(sla_metrics, "analytics_sla_metrics", engine)
+
+        daily_volume = transform_daily_volume(valid_requests)
+        load_analytics(daily_volume, "analytics_daily_volume", engine)
+
+        # Future extensions:
+        # - SLA breach detection
+        # - Agent performance metrics
+        # - Department workload analysis
+
+        logger.info("ServiceHub ETL pipeline completed successfully")
+    except ETLBaseError:
+        logger.exception("ServiceHub ETL pipeline failed due to an ETL error")
+        raise
+    except Exception as exc:
+        logger.exception("ServiceHub ETL pipeline failed due to an unexpected error: %s", exc)
+        raise
+
 
 if __name__ == "__main__":
     run_pipeline()

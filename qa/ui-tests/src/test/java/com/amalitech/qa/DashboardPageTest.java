@@ -1,5 +1,6 @@
 package com.amalitech.qa;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -20,7 +21,8 @@ public class DashboardPageTest {
 
     @Test
     public void testDashboardPageLoads() {
-        driver.get("http://localhost:8080");
+        Dotenv dotenv = Dotenv.configure().directory("../../").load();
+        driver.get(dotenv.get("BASE_URL"));
         assertTrue(driver.getPageSource().contains("ServiceHub"));
     }
 
