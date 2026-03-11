@@ -2,6 +2,11 @@ import './style.css';
 import $ from 'jquery';
 import DataTable from 'datatables.net-dt';
 import 'preline';
+import { buildChart, buildTooltip, buildTooltipForDonut, cssVarToValue } from 'preline/helpers/apexcharts';
+import { varToColor } from 'preline/helpers/shared';
+import _ from 'lodash';
+import ApexCharts from 'apexcharts';
+import Chart from 'chart.js/auto';
 
 // Declare global types for Preline
 declare global {
@@ -11,12 +16,28 @@ declare global {
         $: typeof $;
         jQuery: typeof $;
         DataTable: typeof DataTable;
+        _: typeof _;
+        ApexCharts: typeof ApexCharts;
+        Chart: typeof Chart;
+        buildChart: typeof buildChart;
+        buildTooltip: typeof buildTooltip;
+        buildTooltipForDonut: typeof buildTooltipForDonut;
+        cssVarToValue: typeof cssVarToValue;
+        varToColor: typeof varToColor;
     }
 }
 
 window.$ = $;
 window.jQuery = $;
 window.DataTable = DataTable;
+window._ = _;
+window.ApexCharts = ApexCharts;
+window.Chart = Chart;
+window.buildChart = buildChart;
+window.buildTooltip = buildTooltip;
+window.buildTooltipForDonut = buildTooltipForDonut;
+window.cssVarToValue = cssVarToValue;
+window.varToColor = varToColor;
 
 // Ensure Preline is initialized even if the window 'load' event has already fired
 const initPreline = () => {

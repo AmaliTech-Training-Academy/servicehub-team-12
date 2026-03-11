@@ -12,6 +12,9 @@
 /* Plugins */
 @plugin "@tailwindcss/forms";
 
+/* ApexCharts */
+@import "../node_modules/apexcharts/dist/apexcharts.css";
+
 /* Preline Themes */
 @import "../node_modules/preline/css/themes/theme.css";
 

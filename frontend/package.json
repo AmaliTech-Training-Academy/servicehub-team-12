@@ -17,8 +17,12 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@types/lodash": "^4.17.24",
+    "apexcharts": "^5.10.3",
+    "chart.js": "^4.5.1",
     "datatables.net-dt": "^2.3.7",
     "jquery": "^4.0.0",
+    "lodash": "^4.17.23",
     "preline": "^4.1.2",
     "tailwindcss": "^4.2.1"
   }
