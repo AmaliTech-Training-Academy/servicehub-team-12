@@ -119,9 +119,9 @@ jobs:
               run: |
                   source .venv/bin/activate
                   # stop the build if there are Python syntax errors or undefined names
-                  flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+                  flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=.venv
                   # exit-zero treats all errors as warnings
-                  flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+                  flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=.venv
 
             - name: Run tests
               working-directory: data-engineering
@@ -192,7 +192,6 @@ jobs:
                   context: backend
                   file: backend/Dockerfile
                   tags: |
-                      servicehub:${{ steps.meta.outputs.image_tag }}
                       ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ steps.meta.outputs.image_tag }}
                       ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
                   push: ${{ inputs.push_image }}

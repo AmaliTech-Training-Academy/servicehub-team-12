@@ -1,97 +1,62 @@
 package com.servicehub.service.impl;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.servicehub.mapper.ServiceRequestMapper;
+import com.servicehub.exception.InvalidTransitionException;
+import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.model.ServiceRequest;
-import com.servicehub.service.ServiceRequestService;
+import com.servicehub.repository.ServiceRequestRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.servicehub.exception.InvalidTransitionException;
 
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.service.WorkflowService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkflowServiceImpl implements WorkflowService {
 
-    private final ServiceRequestService serviceRequestService;
-    private final ServiceRequestMapper serviceRequestMapper;
-
-    private static final Map<RequestStatus, List<RequestStatus>> VALID_TRANSITIONS = Map.of(
-        RequestStatus.OPEN, List.of(RequestStatus.ASSIGNED),
-        RequestStatus.ASSIGNED, List.of(RequestStatus.IN_PROGRESS),
-        RequestStatus.IN_PROGRESS, List.of(RequestStatus.RESOLVED),
-        RequestStatus.RESOLVED, List.of(RequestStatus.CLOSED)
+    private static final Map<RequestStatus, RequestStatus> NEXT_STATUS = Map.of(
+            RequestStatus.OPEN, RequestStatus.ASSIGNED,
+            RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS,
+            RequestStatus.IN_PROGRESS, RequestStatus.RESOLVED,
+            RequestStatus.RESOLVED, RequestStatus.CLOSED
     );
 
-    @Override
-    public boolean isValidTransition(RequestStatus currentStatus, RequestStatus newStatus) {
-        if (currentStatus == null || newStatus == null) {
-            return false;
-        }
-
-        List<RequestStatus> validNextStatuses = VALID_TRANSITIONS.get(currentStatus);
-        return validNextStatuses != null && validNextStatuses.contains(newStatus);
-    }
+    private final ServiceRequestRepository serviceRequestRepository;
 
     @Override
     @Transactional
-    public void transitionStatus(UUID requestId, RequestStatus newStatus) {
-        log.info("Attempting to transition request {} to status {}", requestId, newStatus);
+    public void transitionStatus(UUID requestId) {
 
-        ServiceRequest serviceRequest = serviceRequestMapper.toEntity(serviceRequestService.findById(requestId));
+        ServiceRequest serviceRequest = serviceRequestRepository.findById(requestId).orElseThrow(
+                () -> new ResourceNotFoundException("Service request not found: " + requestId + " was not found")
+        );
 
-        validateTransition(serviceRequest, newStatus);
+        RequestStatus currentStatus = serviceRequest.getStatus();
+        System.out.println("current " + currentStatus);
+        RequestStatus nextStatus = NEXT_STATUS.get(currentStatus);
 
-        RequestStatus oldStatus = serviceRequest.getStatus();
+        if (nextStatus == null) {
+            throw new InvalidTransitionException("Invalid transition from " + currentStatus);
+        }
 
-        serviceRequest.setStatus(newStatus);
+        serviceRequest.setStatus(nextStatus);
 
-        updateTimestamps(serviceRequest, newStatus);
+        updateTimestamps(serviceRequest, nextStatus);
 
         serviceRequest.setUpdatedAt(OffsetDateTime.now());
 
         log.info("Successfully transitioned request {} from {} to {}",
-            requestId, oldStatus, newStatus);
-    }
-
-    @Override
-    public List<RequestStatus> getValidNextStatuses(RequestStatus currentStatus) {
-        return VALID_TRANSITIONS.getOrDefault(currentStatus, Collections.emptyList());
-    }
-
-    @Override
-    public void validateTransition(ServiceRequest serviceRequest, RequestStatus newStatus) {
-        RequestStatus currentStatus = serviceRequest.getStatus();
-
-        if (!isValidTransition(currentStatus, newStatus)) {
-            throw new InvalidTransitionException(
-                String.format(
-                    "Invalid status transition from %s to %s. Valid transitions from %s are: %s",
-                    currentStatus,
-                    newStatus,
-                    currentStatus,
-                    VALID_TRANSITIONS.getOrDefault(currentStatus, Collections.emptyList())
-                )
-            );
-        }
-
-        if (newStatus == RequestStatus.IN_PROGRESS && serviceRequest.getAssignedTo() == null) {
-            throw new InvalidTransitionException(
-                "Cannot move request to IN_PROGRESS without assigning it to an agent"
-            );
-        }
+                requestId, currentStatus, nextStatus);
     }
 
     /**

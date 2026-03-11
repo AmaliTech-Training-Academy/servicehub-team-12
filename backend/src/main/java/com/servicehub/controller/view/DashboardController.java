@@ -1,6 +1,12 @@
 package com.servicehub.controller.view;
 
+import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.service.ServiceRequestService;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -8,11 +14,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.util.Collections;
-
 @Controller
 @RequestMapping("/dashboard")
+@RequiredArgsConstructor
 public class DashboardController {
+
+    private static final int RECENT_REQUEST_LIMIT = 5;
+
+    private final ServiceRequestService serviceRequestService;
 
     @GetMapping
     public String dashboard(@AuthenticationPrincipal Object principal) {
@@ -33,10 +42,30 @@ public class DashboardController {
         model.addAttribute("userRole", principal != null ? principal.getRole().name() : "USER");
         if (principal != null) {
             model.addAttribute("currentUserName", principal.getFullName());
+            List<ServiceRequestResponse> userRequests =
+                    serviceRequestService.findAllByRequesterId(principal.getId());
+
+            long openCount = userRequests.stream()
+                    .filter(request -> request.getStatus() == RequestStatus.OPEN)
+                    .count();
+
+            long resolvedCount = userRequests.stream()
+                    .filter(request -> request.getStatus() == RequestStatus.RESOLVED)
+                    .count();
+
+            model.addAttribute("myOpenCount", openCount);
+            model.addAttribute("myResolvedCount", resolvedCount);
+            model.addAttribute("myTotalCount", userRequests.size());
+            model.addAttribute("myRecentTickets", userRequests.stream()
+                    .limit(RECENT_REQUEST_LIMIT)
+                    .toList());
+            return "dashboard/user";
         }
+
         model.addAttribute("myOpenCount", 0);
         model.addAttribute("myResolvedCount", 0);
-        model.addAttribute("myTickets", Collections.emptyList());
+        model.addAttribute("myTotalCount", 0);
+        model.addAttribute("myRecentTickets", Collections.emptyList());
         return "dashboard/user";
     }
 
