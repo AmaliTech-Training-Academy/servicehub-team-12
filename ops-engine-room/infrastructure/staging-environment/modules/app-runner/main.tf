@@ -47,19 +47,17 @@ resource "aws_apprunner_service" "this" {
   service_name = "${local.name_prefix}-backend"
 
   source_configuration {
-    # Auto-deployments will be enabled once the ECR image is available.
-    # Initially using a public nginx image as a bootstrap placeholder.
+    # Auto-deployments not supported for ECR_PUBLIC placeholder
     auto_deployments_enabled = false
 
+    # Using bitnami nginx placeholder image
     image_repository {
       image_identifier      = "public.ecr.aws/bitnami/nginx:latest"
       image_repository_type = "ECR_PUBLIC"
 
       image_configuration {
-        port = var.port
-        runtime_environment_variables = merge(var.environment_variables, {
-          NGINX_HTTP_PORT_NUMBER = var.port
-        })
+        port                          = var.port
+        runtime_environment_variables = var.environment_variables
       }
     }
   }
