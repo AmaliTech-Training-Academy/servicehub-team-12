@@ -80,4 +80,3 @@ def test_transform_daily_volume_computes_request_counts():
     }
     assert expected_columns.issubset(set(result.columns))
     assert result["ticket_count"].sum() == len(requests_df)
-

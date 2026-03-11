@@ -16,4 +16,3 @@ __all__ = [
     "transform_daily_volume",
     "load_analytics",
 ]
-

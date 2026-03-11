@@ -2,8 +2,6 @@
 Extraction layer for ServiceHub analytics ETL.
 """
 
-from typing import Optional
-
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -72,4 +70,3 @@ def extract_sla_policies(engine: Engine) -> pd.DataFrame:
     except Exception as exc:
         logger.error("Failed to extract SLA policies: %s", exc)
         raise ExtractionError("Failed to extract SLA policies") from exc
-

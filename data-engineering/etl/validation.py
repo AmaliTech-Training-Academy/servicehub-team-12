@@ -33,7 +33,11 @@ ALLOWED_STATUSES: Iterable[str] = {
 }
 
 
-def _ensure_required_columns(df: pd.DataFrame, required: Iterable[str], frame_name: str) -> None:
+def _ensure_required_columns(
+    df: pd.DataFrame,
+    required: Iterable[str],
+    frame_name: str,
+) -> None:
     missing = [col for col in required if col not in df.columns]
     if missing:
         raise DataValidationError(
@@ -41,14 +45,18 @@ def _ensure_required_columns(df: pd.DataFrame, required: Iterable[str], frame_na
         )
 
 
-def validate_and_split_requests(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def validate_and_split_requests(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Validate the service requests dataframe and split into valid and invalid rows.
+    Validate the service requests dataframe and split into valid and
+    invalid rows.
 
-    Structural problems (e.g. missing required columns, non-parseable timestamps) raise
-    DataValidationError. Row-level issues (invalid categories, priorities, statuses,
-    timestamp ordering) do not break the pipeline; such rows are quarantined and returned
-    in the invalid dataframe.
+    Structural problems (e.g. missing required columns, non-parseable
+    timestamps) raise DataValidationError. Row-level issues (invalid
+    categories, priorities, statuses, timestamp ordering) do not break
+    the pipeline. Such rows are quarantined and returned in the invalid
+    dataframe.
     """
     if df is None:
         raise DataValidationError("requests dataframe is None")
@@ -84,7 +92,8 @@ def validate_and_split_requests(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Data
             invalid_statuses_mask.sum(),
         )
 
-    # Timestamp sanity checks: hard failures if timestamps are not parseable at all
+    # Timestamp sanity checks: hard failures if timestamps are not parseable
+    # at all.
     timestamps = ["created_at", "resolved_at"]
     for ts_col in timestamps:
         if ts_col in working.columns:
@@ -97,11 +106,16 @@ def validate_and_split_requests(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Data
 
     created = pd.to_datetime(working["created_at"], errors="coerce")
     resolved = pd.to_datetime(working["resolved_at"], errors="coerce")
-    invalid_order_mask = (resolved.notna()) & (created.notna()) & (resolved < created)
+    invalid_order_mask = (
+        resolved.notna()
+        & created.notna()
+        & (resolved < created)
+    )
     if invalid_order_mask.any():
         invalid_mask |= invalid_order_mask
         logger.warning(
-            "Quarantining %d rows where resolved_at is earlier than created_at",
+            "Quarantining %d rows where resolved_at is earlier than "
+            "created_at",
             invalid_order_mask.sum(),
         )
 
@@ -111,12 +125,15 @@ def validate_and_split_requests(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Data
     return valid_df, invalid_df
 
 
-def validate_and_split_sla_policies(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def validate_and_split_sla_policies(
+    df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Validate SLA policies and split into valid and invalid rows.
 
-    Structural problems (e.g. missing required columns) raise DataValidationError.
-    Row-level issues are quarantined and returned in the invalid dataframe.
+    Structural problems (e.g. missing required columns) raise
+    DataValidationError. Row-level issues are quarantined and returned
+    in the invalid dataframe.
     """
     if df is None:
         raise DataValidationError("sla_policies dataframe is None")

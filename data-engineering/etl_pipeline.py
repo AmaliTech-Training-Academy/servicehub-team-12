@@ -1,4 +1,4 @@
-"""ETL Pipeline for ServiceHub - SLA Analytics and Resolution Metrics.
+"""ETL Pipeline for ServiceHub - SLA analytics and resolution metrics.
 
 This module provides the orchestration layer. Extraction, transformation,
 and loading logic live in the dedicated `etl` package.
@@ -18,7 +18,10 @@ from etl import (
     transform_daily_volume,
     transform_sla_metrics,
 )
-from etl.validation import validate_and_split_requests, validate_and_split_sla_policies
+from etl.validation import (
+    validate_and_split_requests,
+    validate_and_split_sla_policies,
+)
 from exceptions import DataValidationError, ETLBaseError
 from logging_config import get_logger
 
@@ -49,12 +52,14 @@ def run_pipeline(database_url: Optional[str] = None) -> None:
         sla_df = extract_sla_policies(engine)
 
         try:
-            valid_requests, invalid_requests = validate_and_split_requests(requests_df)
+            valid_requests, invalid_requests = validate_and_split_requests(
+                requests_df,
+            )
             valid_sla, invalid_sla = validate_and_split_sla_policies(sla_df)
         except DataValidationError as exc:
             logger.error("Dataset-level validation failed: %s", exc)
-            # In this case, treat all rows as invalid and skip analytics, but do not
-            # crash the pipeline.
+            # In this case, treat all rows as invalid and skip analytics,
+            # but do not crash the pipeline.
             valid_requests = pd.DataFrame()
             valid_sla = pd.DataFrame()
             invalid_requests = requests_df
@@ -63,12 +68,24 @@ def run_pipeline(database_url: Optional[str] = None) -> None:
         # Quarantine invalid rows so that bad data does not block analytics
         try:
             if not invalid_requests.empty:
-                load_analytics(invalid_requests, "analytics_invalid_requests", engine)
+                load_analytics(
+                    invalid_requests,
+                    "analytics_invalid_requests",
+                    engine,
+                )
             if not invalid_sla.empty:
-                load_analytics(invalid_sla, "analytics_invalid_sla_policies", engine)
+                load_analytics(
+                    invalid_sla,
+                    "analytics_invalid_sla_policies",
+                    engine,
+                )
         except ETLBaseError:
-            # If quarantine loading fails, log and continue with the main pipeline
-            logger.exception("Failed to load quarantined data; continuing with valid data only.")
+            # If quarantine loading fails, log and continue with the main
+            # pipeline.
+            logger.exception(
+                "Failed to load quarantined data; continuing with valid "
+                "data only."
+            )
 
         sla_metrics = transform_sla_metrics(valid_requests, valid_sla)
         load_analytics(sla_metrics, "analytics_sla_metrics", engine)
@@ -86,7 +103,10 @@ def run_pipeline(database_url: Optional[str] = None) -> None:
         logger.exception("ServiceHub ETL pipeline failed due to an ETL error")
         raise
     except Exception as exc:
-        logger.exception("ServiceHub ETL pipeline failed due to an unexpected error: %s", exc)
+        logger.exception(
+            "ServiceHub ETL pipeline failed due to an unexpected error: %s",
+            exc,
+        )
         raise
 
 
