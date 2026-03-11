@@ -24,5 +24,6 @@ jobs:
             run_data_tests: true
             run_checkov: true
             run_trivy: true
+            run_sbom: true
             deploy_dags: false
         secrets: inherit
