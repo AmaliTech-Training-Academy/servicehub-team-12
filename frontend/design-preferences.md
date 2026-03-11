@@ -66,3 +66,52 @@ Use the following styling as the reference for alerts that present an action:
   </div>
 </div>
 ```
+
+## Feedback Alerts
+
+Use the following styling as the reference for compact success and error alerts:
+
+```html
+<div class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+  <svg
+    class="size-4 shrink-0"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" x2="12" y1="8" y2="12" />
+    <line x1="12" x2="12.01" y1="16" y2="16" />
+  </svg>
+  Error message goes here.
+</div>
+
+<div class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+  <svg
+    class="size-4 shrink-0"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+  Success message goes here.
+</div>
+```
+
+## Links
+
+Prefer underlined links to have a more noticeable gap between the text and the underline. Use an underline offset such as `underline-offset-4` unless a tighter treatment is intentionally needed.

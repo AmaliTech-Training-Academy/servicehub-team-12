@@ -59,6 +59,8 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Transactional(readOnly = true)
     public List<ServiceRequestResponse> findAll() {
         return serviceRequestRepository.findAll().stream()
+                .sorted(Comparator.comparing(ServiceRequest::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toResponse)
                 .toList();
     }
@@ -230,8 +232,11 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 .priority(serviceRequest.getPriority())
                 .status(serviceRequest.getStatus())
                 .departmentId(serviceRequest.getDepartment() == null ? null : serviceRequest.getDepartment().getId())
+                .departmentName(serviceRequest.getDepartment() == null ? null : serviceRequest.getDepartment().getName())
                 .assignedToId(serviceRequest.getAssignedTo() == null ? null : serviceRequest.getAssignedTo().getId())
+                .assignedAgentName(serviceRequest.getAssignedTo() == null ? null : serviceRequest.getAssignedTo().getFullName())
                 .requesterId(serviceRequest.getRequester() == null ? null : serviceRequest.getRequester().getId())
+                .requesterName(serviceRequest.getRequester() == null ? null : serviceRequest.getRequester().getFullName())
                 .slaDeadline(serviceRequest.getSlaDeadline())
                 .firstResponseAt(serviceRequest.getFirstResponseAt())
                 .resolvedAt(serviceRequest.getResolvedAt())
