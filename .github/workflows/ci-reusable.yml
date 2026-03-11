@@ -192,7 +192,6 @@ jobs:
                   context: backend
                   file: backend/Dockerfile
                   tags: |
-                      servicehub:${{ steps.meta.outputs.image_tag }}
                       ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ steps.meta.outputs.image_tag }}
                       ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
                   push: ${{ inputs.push_image }}
