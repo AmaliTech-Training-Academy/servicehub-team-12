@@ -7,6 +7,8 @@ import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.SlaPolicy;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.exception.AccessDeniedException;
+import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.SlaPolicyRepository;
@@ -14,6 +16,7 @@ import com.servicehub.repository.UserRepository;
 import com.servicehub.service.ServiceRequestService;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +44,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         serviceRequest.setPriority(request.getPriority());
         serviceRequest.setStatus(request.getStatus() == null ? RequestStatus.OPEN : request.getStatus());
         serviceRequest.setRequester(getUserOrThrow(request.getRequesterId(), "Requester not found"));
-        serviceRequest.setAssignedTo(getOptionalUser(request.getAssignedToId(), "Assigned user not found"));
+        serviceRequest.setAssignedTo(getOptionalUser(request.getAssignedToId()));
 
         Department department = resolveDepartment(request.getCategory(), request.getDepartmentId());
         serviceRequest.setDepartment(department);
@@ -60,10 +63,36 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 .toList();
     }
 
+    private List<ServiceRequestResponse> mapRequesterRequests(User user) {
+        return serviceRequestRepository.findAllByRequester(user).stream()
+                .sorted(Comparator.comparing(ServiceRequest::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceRequestResponse> findAllByRequesterId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        return mapRequesterRequests(user);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public ServiceRequestResponse findById(UUID id) {
         return toResponse(getRequestOrThrow(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ServiceRequestResponse findByIdForUser(UUID id, UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        ServiceRequest request = serviceRequestRepository.findByIdAndRequester(id, user)
+                .orElseThrow(AccessDeniedException::new);
+        return toResponse(request);
     }
 
     @Override
@@ -139,11 +168,11 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, message));
     }
 
-    private User getOptionalUser(UUID userId, String message) {
+    private User getOptionalUser(UUID userId) {
         if (userId == null) {
             return null;
         }
-        return getUserOrThrow(userId, message);
+        return getUserOrThrow(userId, "Assigned user not found");
     }
 
     private Department resolveDepartment(com.servicehub.model.enums.RequestCategory category, UUID departmentId) {
