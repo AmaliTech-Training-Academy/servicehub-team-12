@@ -7,6 +7,8 @@ import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.SlaPolicy;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.exception.AccessDeniedException;
+import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.SlaPolicyRepository;
@@ -64,6 +66,26 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     @Transactional(readOnly = true)
     public ServiceRequestResponse findById(UUID id) {
         return toResponse(getRequestOrThrow(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceRequestResponse> findAllByRequesterId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        return serviceRequestRepository.findAllByRequester(user).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ServiceRequestResponse findByIdForUser(UUID id, UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        ServiceRequest request = serviceRequestRepository.findByIdAndRequester(id, user)
+                .orElseThrow(AccessDeniedException::new);
+        return toResponse(request);
     }
 
     @Override

@@ -45,6 +45,12 @@ public class SecurityConfig {
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/agent/**").hasAnyRole("ADMIN", "AGENT")
+                .requestMatchers("/dashboard/admin").hasRole("ADMIN")
+                .requestMatchers("/dashboard/agent").hasAnyRole("ADMIN", "AGENT")
+                .requestMatchers("/dashboard/user").hasAnyRole("ADMIN", "AGENT", "USER")
+                .requestMatchers("/requests/assigned", "/requests/open").hasAnyRole("ADMIN", "AGENT")
+                .requestMatchers("/requests/**").hasAnyRole("ADMIN", "AGENT", "USER")
+                .requestMatchers("/api/service-requests/**", "/api/requests/**").authenticated()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
