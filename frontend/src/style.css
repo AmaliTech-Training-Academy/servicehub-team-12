@@ -21,3 +21,11 @@
 .dt-layout-row:has(.dt-paging) {
   display: none !important;
 }
+
+.action-alert-border {
+  border-color: var(--primary-200) !important;
+}
+
+.dark .action-alert-border {
+  border-color: var(--primary-900) !important;
+}
