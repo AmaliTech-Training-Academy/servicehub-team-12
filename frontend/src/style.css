@@ -14,3 +14,10 @@
 
 /* Preline Themes */
 @import "../node_modules/preline/css/themes/theme.css";
+
+/* CSS for hiding some default datatable elements */
+.dt-layout-row:has(.dt-search),
+.dt-layout-row:has(.dt-length),
+.dt-layout-row:has(.dt-paging) {
+  display: none !important;
+}

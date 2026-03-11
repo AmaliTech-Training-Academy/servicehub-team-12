@@ -1,29 +1,29 @@
 """
-Airflow DAG to support manual loading of sample data for development and testing.
-
-The implementation of the actual sample data generator will be added in a
-separate feature. For now, this DAG provides a safe, no-op task that can be
-extended without changing the orchestration structure.
+Airflow DAG to support manual loading of sample data for development and
+testing.
 """
 
-from __future__ import annotations
-
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 # Ensure the project root is on sys.path so that shared modules can be imported
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(
+    os.getenv("PYTHONPATH", Path(__file__).resolve().parents[1])
+)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from etl_pipeline import get_engine  # noqa: E402
 from logging_config import get_logger  # noqa: E402
-from sample_data.generator import SampleConfig, load_sample_requests  # noqa: E402
-
+from sample_data.generator import (  # noqa: E402
+    SampleConfig,
+    load_sample_requests,
+)
 
 logger = get_logger(__name__)
 
@@ -42,7 +42,7 @@ def _load_sample_data() -> None:
 with DAG(
     dag_id="servicehub_sample_data_loader",
     description="Manual DAG for loading or refreshing sample ServiceHub data.",
-    schedule_interval=None,  # Manual trigger only
+    schedule=None,  # Manual trigger only
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,
@@ -52,4 +52,3 @@ with DAG(
         task_id="load_sample_data",
         python_callable=_load_sample_data,
     )
-
