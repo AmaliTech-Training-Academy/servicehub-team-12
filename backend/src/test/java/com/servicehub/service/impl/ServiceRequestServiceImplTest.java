@@ -25,6 +25,7 @@ import com.servicehub.model.enums.Role;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.assignment.AutoAssignmentStrategy;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,12 +58,16 @@ class ServiceRequestServiceImplTest {
     @Mock
     private ServiceRequestMapper serviceRequestMapper;
 
+    @Mock
+    private AutoAssignmentStrategy autoAssignmentStrategy;
+
     private ServiceRequestServiceImpl serviceRequestService;
 
     @BeforeEach
     void setUp() {
         serviceRequestService = new ServiceRequestServiceImpl(
-                serviceRequestRepository, departmentRepository, userRepository, eventPublisher, serviceRequestMapper);
+                serviceRequestRepository, departmentRepository, userRepository, eventPublisher, serviceRequestMapper,
+                autoAssignmentStrategy);
     }
 
     @Test
@@ -232,19 +237,18 @@ class ServiceRequestServiceImplTest {
     }
 
     @Test
-    @DisplayName("autoAssign: assigns first matching agent in routed department")
-    void autoAssignShouldAssignFirstMatchingAgent() {
+    @DisplayName("autoAssign: assigns strategy-selected agent in routed department")
+    void autoAssignShouldAssignStrategySelectedAgent() {
         UUID requestId = UUID.randomUUID();
         ServiceRequest request = serviceRequest(requestId, "Route me");
         request.setDepartment(department(UUID.randomUUID(), RequestCategory.IT_SUPPORT));
-        request.getDepartment().setName("IT");
 
         User agent = user(UUID.randomUUID());
         agent.setRole(Role.AGENT);
         agent.setDepartment("IT");
 
         when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
-        when(userRepository.findFirstByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(Role.AGENT, "IT"))
+        when(autoAssignmentStrategy.selectAssignee(request))
                 .thenReturn(Optional.of(agent));
 
         serviceRequestService.autoAssign(requestId);
@@ -267,7 +271,7 @@ class ServiceRequestServiceImplTest {
         serviceRequestService.autoAssign(requestId);
 
         assertEquals(existingAgent.getId(), request.getAssignedTo().getId());
-        verify(userRepository, never()).findFirstByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(any(), any());
+        verify(autoAssignmentStrategy, never()).selectAssignee(any());
     }
 
     @Test
@@ -276,10 +280,9 @@ class ServiceRequestServiceImplTest {
         UUID requestId = UUID.randomUUID();
         ServiceRequest request = serviceRequest(requestId, "No agent available");
         request.setDepartment(department(UUID.randomUUID(), RequestCategory.IT_SUPPORT));
-        request.getDepartment().setName("IT");
 
         when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
-        when(userRepository.findFirstByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(Role.AGENT, "IT"))
+        when(autoAssignmentStrategy.selectAssignee(request))
                 .thenReturn(Optional.empty());
 
         serviceRequestService.autoAssign(requestId);

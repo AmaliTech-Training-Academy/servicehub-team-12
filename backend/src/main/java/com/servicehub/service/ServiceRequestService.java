@@ -14,6 +14,8 @@ public interface ServiceRequestService {
     /** Returns only tickets where the requester matches userId. */
     List<ServiceRequestResponse> findAllByRequesterId(UUID userId);
 
+    List<ServiceRequestResponse> findAllByAssignedToId(UUID userId);
+
     ServiceRequestResponse findById(UUID id);
 
     /** Returns the ticket only if it belongs to userId; throws 403 otherwise. */
