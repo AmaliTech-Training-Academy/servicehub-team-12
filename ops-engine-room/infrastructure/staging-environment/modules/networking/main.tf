@@ -75,6 +75,51 @@ resource "aws_vpc_endpoint" "cloudwatch_logs" {
   })
 }
 
+# SSM Interface Endpoint (required for Session Manager in private subnets)
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ssm"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name   = "${local.name_prefix}-vpce-ssm"
+    Module = "networking"
+  })
+}
+
+# SSM Messages Interface Endpoint (required for Session Manager channels)
+resource "aws_vpc_endpoint" "ssmmessages" {
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ssmmessages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name   = "${local.name_prefix}-vpce-ssmmessages"
+    Module = "networking"
+  })
+}
+
+# EC2 Messages Interface Endpoint (required for SSM command delivery)
+resource "aws_vpc_endpoint" "ec2messages" {
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ec2messages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name   = "${local.name_prefix}-vpce-ec2messages"
+    Module = "networking"
+  })
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Security Group for VPC Interface Endpoints
 # ──────────────────────────────────────────────────────────────────────────────

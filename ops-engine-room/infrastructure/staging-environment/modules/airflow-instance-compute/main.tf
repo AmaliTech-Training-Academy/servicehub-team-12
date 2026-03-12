@@ -1,6 +1,6 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Airflow Instance Compute Module – Main
-# Provisions an Ubuntu 24.04 EC2 instance as a Docker host for Airflow.
+# Provisions an Amazon Linux 2 EC2 instance as a Docker host for Airflow.
 # Uses the existing servicehub SSH key pair from the staging environment.
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ resource "aws_key_pair" "airflow" {
 # ──────────────────────────────────────────────────────────────────────────────
 
 resource "aws_instance" "airflow" {
-  ami                    = data.aws_ami.ubuntu.id
+  ami                    = data.aws_ami.amazon_linux_2.id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = var.security_group_ids
@@ -75,7 +75,7 @@ resource "aws_instance" "airflow" {
   })
 
   lifecycle {
-    ignore_changes = [ami, user_data]
+    ignore_changes = [user_data]
   }
 }
 
@@ -85,14 +85,14 @@ resource "aws_instance" "airflow" {
 
 data "aws_region" "current" {}
 
-# Ubuntu 24.04 LTS (Noble Numbat) – latest AMI from Canonical
-data "aws_ami" "ubuntu" {
+# Amazon Linux 2 – latest x86_64 AMI from AWS
+data "aws_ami" "amazon_linux_2" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical
+  owners      = ["137112412989"] # Amazon
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 
   filter {

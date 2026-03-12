@@ -39,6 +39,11 @@ x-airflow-common:
     postgres:
       condition: service_healthy
 
+x-awslogs-options: &awslogs-options
+  awslogs-region: ${AWS_REGION}
+  awslogs-group: ${CLOUDWATCH_LOG_GROUP}
+  awslogs-create-group: "true"
+
 services:
 
   postgres:
@@ -55,6 +60,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: postgres
     restart: always
   
 
@@ -69,6 +79,11 @@ services:
       timeout: 30s
       retries: 50
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: redis
     restart: always
 
   airflow-apiserver:
@@ -82,6 +97,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: airflow-apiserver
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -97,6 +117,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: airflow-scheduler
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -112,6 +137,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: airflow-dag-processor
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -127,6 +157,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: airflow-triggerer
     restart: always
     depends_on:
       <<: *airflow-common-depends-on
@@ -144,6 +179,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: airflow-worker
     environment:
       <<: *airflow-common-env
       DUMB_INIT_SETSID: "0"
@@ -201,6 +241,11 @@ services:
       _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+    logging:
+      driver: awslogs
+      options:
+        <<: *awslogs-options
+        awslogs-stream: airflow-init
     user: "0:0"
     restart: "no"
 
