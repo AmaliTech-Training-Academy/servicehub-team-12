@@ -46,17 +46,21 @@ const initPreline = () => {
     }
 };
 
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    initPreline();
-} else {
-    window.addEventListener('DOMContentLoaded', initPreline);
-}
+const extractCellText = (cellValue: string | undefined): string => {
+    if (!cellValue) {
+        return '';
+    }
 
-window.addEventListener('load', () => {
+    const temp = document.createElement('div');
+    temp.innerHTML = cellValue;
+    return temp.textContent?.trim() ?? '';
+};
+
+const initRequestTables = () => {
     const requestTableRoots = document.querySelectorAll<HTMLElement>('[data-request-table]');
 
     requestTableRoots.forEach((requestTableRoot) => {
-        if (!window.HSDataTable || !requestTableRoot.id) {
+        if (!window.HSDataTable) {
             return;
         }
 
@@ -79,14 +83,14 @@ window.addEventListener('load', () => {
 
         dataTable.search.fixed('request-priority', (_searchStr: string, data: string[]) => {
             const priority = priorityEl?.value ?? '';
-            const rowPriority = (data[priorityColumnIndex] ?? '').trim();
+            const rowPriority = extractCellText(data[priorityColumnIndex]);
 
             return !priority || rowPriority === priority;
         });
 
         dataTable.search.fixed('request-status', (_searchStr: string, data: string[]) => {
             const status = statusEl?.value ?? '';
-            const rowStatus = (data[statusColumnIndex] ?? '').trim();
+            const rowStatus = extractCellText(data[statusColumnIndex]);
 
             return !status || rowStatus === status;
         });
@@ -104,7 +108,17 @@ window.addEventListener('load', () => {
             }
         });
     });
-});
+};
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initPreline();
+    initRequestTables();
+} else {
+    window.addEventListener('DOMContentLoaded', () => {
+        initPreline();
+        initRequestTables();
+    });
+}
 
 // Global JS entry point.
 // Import and initialise npm packages here (e.g. Preline UI components).

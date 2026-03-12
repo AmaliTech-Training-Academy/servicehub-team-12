@@ -81,6 +81,18 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ServiceRequestResponse> findAllByAssignedToId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        return serviceRequestRepository.findAllByAssignedTo(user).stream()
+                .sorted(Comparator.comparing(ServiceRequest::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(serviceRequestMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ServiceRequestResponse findById(UUID id) {
         return serviceRequestMapper.toResponse(getRequestOrThrow(id));
     }

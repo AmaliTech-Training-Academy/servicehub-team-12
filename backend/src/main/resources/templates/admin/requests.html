@@ -149,8 +149,8 @@
               <td class="p-3 pe-5 whitespace-nowrap text-end text-sm font-medium">
                 <form th:action="@{/admin/requests/{id}/transition(id=${t.id})}" method="post" class="inline">
                   <button type="submit"
-                          class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg text-primary hover:text-primary-hover focus:outline-hidden focus:text-primary-focus disabled:opacity-50 disabled:pointer-events-none">
-                    Transition status
+                          class="inline-flex items-center gap-x-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition">
+                    Transition
                   </button>
                 </form>
               </td>
