@@ -23,6 +23,7 @@ public class DataSeeder implements CommandLineRunner {
     private static final String ADMIN_PASSWORD = "password123";
     private static final String ADMIN_NAME     = "System Administrator";
     private static final String AGENT_PASSWORD = "password123";
+    
     private static final List<AgentSeed> AGENT_SEEDS = List.of(
             new AgentSeed("ama.boateng@amalitech.com", "Ama Boateng", UserDepartment.IT),
             new AgentSeed("kwame.asare@amalitech.com", "Kwame Asare", UserDepartment.IT),
@@ -33,7 +34,20 @@ public class DataSeeder implements CommandLineRunner {
             new AgentSeed("akosua.darko@amalitech.com", "Akosua Darko", UserDepartment.HR),
             new AgentSeed("nana.quaye@amalitech.com", "Nana Quaye", UserDepartment.FACILITIES),
             new AgentSeed("adwoa.sarpong@amalitech.com", "Adwoa Sarpong", UserDepartment.FACILITIES),
-            new AgentSeed("kofi.bonsu@amalitech.com", "Kofi Bonsu", UserDepartment.FACILITIES)
+            new AgentSeed("kofi.bonsu@amalitech.com", "Kofi Bonsu", UserDepartment.FACILITIES)); 
+            
+    private static final String USER_PASSWORD  = "password123";
+    private static final List<SeedUser> REGULAR_USERS = List.of(
+            new SeedUser("Daniel Agyeman", "daniel.agyeman@amalitech.com"),
+            new SeedUser("Priscilla Tetteh", "priscilla.tetteh@amalitech.com"),
+            new SeedUser("Samuel Frimpong", "samuel.frimpong@amalitech.com"),
+            new SeedUser("Belinda Kwarteng", "belinda.kwarteng@amalitech.com"),
+            new SeedUser("Emmanuel Sarpong", "emmanuel.sarpong@amalitech.com"),
+            new SeedUser("Gloria Darko", "gloria.darko@amalitech.com"),
+            new SeedUser("Richard Nartey", "richard.nartey@amalitech.com"),
+            new SeedUser("Doreen Badu", "doreen.badu@amalitech.com"),
+            new SeedUser("Michael Koranteng", "michael.koranteng@amalitech.com"),
+            new SeedUser("Patience Aidoo", "patience.aidoo@amalitech.com")
     );
 
     private final DepartmentRepository departmentRepository;
@@ -65,6 +79,7 @@ public class DataSeeder implements CommandLineRunner {
         department.setCategory(departmentDefinition.getRequestCategory());
         departmentRepository.save(department);
         log.info("Department seeded: {}", departmentDefinition.getDisplayName());
+        seedRegularUsers();
     }
 
     private void seedAdmin() {
@@ -117,4 +132,29 @@ public class DataSeeder implements CommandLineRunner {
 
     private record AgentSeed(String email, String fullName, UserDepartment department) {
     }
+    
+    private void seedRegularUsers() {
+        for (SeedUser seedUser : REGULAR_USERS) {
+            String email = seedUser.email();
+
+            if (userRepository.findByEmail(email).isPresent()) {
+                log.info("Regular user already exists — skipping seed for {}", email);
+                continue;
+            }
+
+            User user = User.builder()
+                    .email(email)
+                    .fullName(seedUser.fullName())
+                    .password(passwordEncoder.encode(USER_PASSWORD))
+                    .role(Role.USER)
+                    .provider("local")
+                    .isActive(true)
+                    .build();
+
+            userRepository.save(user);
+            log.info("Regular user created: {}", email);
+        }
+    }
+
+    private record SeedUser(String fullName, String email) {}
 }
