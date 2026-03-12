@@ -1,9 +1,7 @@
 package com.amalitech.qa.sla;
 
 import com.amalitech.qa.base.BaseTest;
-import com.amalitech.qa.testdata.AuthTestData;
-import com.amalitech.qa.testdata.ServiceRequestTestData;
-import io.restassured.http.ContentType;
+import com.amalitech.qa.utils.TestHelper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -12,7 +10,7 @@ import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SlaApiTest extends BaseTest {
+public class SlaTest extends BaseTest {
 
     private String authToken;
 
@@ -22,50 +20,7 @@ public class SlaApiTest extends BaseTest {
      */
     @BeforeAll
     public void authenticate() {
-        authToken = given()
-                .contentType(ContentType.JSON)
-                .body(AuthTestData.VALID_LOGIN_BODY)
-                .when()
-                .post("/api/v1/auth/login")
-                .then()
-                .statusCode(200)
-                .extract().path("token");
-    }
-
-    /**
-     * Helper method to create a new service request.
-     * Used by all SLA tests to get a valid request ID to test against.
-     * Returns the UUID of the newly created service request.
-     */
-    private String createServiceRequest() {
-        return given()
-                .contentType(ContentType.JSON)
-                .header("Authorization", "Bearer " + authToken)
-                .body(ServiceRequestTestData.VALID_CREATE_BODY)
-                .when()
-                .post("/api/service-requests")
-                .then()
-                .statusCode(201)
-                .extract().path("id");
-    }
-
-    /**
-     * Helper method to transition a service request a given number of times.
-     * Each call moves the request one step forward in the status flow:
-     * OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED
-     *
-     * @param requestId the UUID of the service request to transition
-     * @param times the number of transitions to perform
-     */
-    private void transitionTimes(String requestId, int times) {
-        for (int i = 0; i < times; i++) {
-            given()
-                    .header("Authorization", "Bearer " + authToken)
-                    .when()
-                    .post("/api/workflow/requests/" + requestId + "/transition")
-                    .then()
-                    .statusCode(200);
-        }
+        authToken = TestHelper.getAuthToken();
     }
 
     /**
@@ -76,7 +31,7 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testSlaDeadlineSetOnCreate() {
-        String requestId = createServiceRequest();
+        String requestId = TestHelper.createServiceRequest(authToken);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -95,7 +50,7 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testIsSlaBreachedFalseOnCreate() {
-        String requestId = createServiceRequest();
+        String requestId = TestHelper.createServiceRequest(authToken);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -114,7 +69,7 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testIsSlaBreachedFieldPresent() {
-        String requestId = createServiceRequest();
+        String requestId = TestHelper.createServiceRequest(authToken);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -135,10 +90,8 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testFirstResponseAtSetOnAssigned() {
-        String requestId = createServiceRequest();
-
-        // OPEN → ASSIGNED
-        transitionTimes(requestId, 1);
+        String requestId = TestHelper.createServiceRequest(authToken);
+        TestHelper.transitionTimes(authToken, requestId, 1); // OPEN → ASSIGNED
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -158,10 +111,8 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testFirstResponseAtNotOverwrittenAfterAssigned() {
-        String requestId = createServiceRequest();
-
-        // OPEN → ASSIGNED → IN_PROGRESS
-        transitionTimes(requestId, 2);
+        String requestId = TestHelper.createServiceRequest(authToken);
+        TestHelper.transitionTimes(authToken, requestId, 2); // OPEN → ASSIGNED → IN_PROGRESS
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -181,10 +132,8 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testResolvedAtSetOnResolved() {
-        String requestId = createServiceRequest();
-
-        // OPEN → ASSIGNED → IN_PROGRESS → RESOLVED
-        transitionTimes(requestId, 3);
+        String requestId = TestHelper.createServiceRequest(authToken);
+        TestHelper.transitionTimes(authToken, requestId, 3); // OPEN → ASSIGNED → IN_PROGRESS → RESOLVED
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -203,7 +152,7 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testResolvedAtNullBeforeResolved() {
-        String requestId = createServiceRequest();
+        String requestId = TestHelper.createServiceRequest(authToken);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -223,10 +172,8 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testClosedAtSetOnClosed() {
-        String requestId = createServiceRequest();
-
-        // OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED
-        transitionTimes(requestId, 4);
+        String requestId = TestHelper.createServiceRequest(authToken);
+        TestHelper.transitionTimes(authToken, requestId, 4); // OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -245,7 +192,7 @@ public class SlaApiTest extends BaseTest {
      */
     @Test
     public void testClosedAtNullBeforeClosed() {
-        String requestId = createServiceRequest();
+        String requestId = TestHelper.createServiceRequest(authToken);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
