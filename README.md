@@ -53,6 +53,10 @@ The commit message hook enforces Conventional Commits and issue traceability:
 
 Example: `feat(auth): add login rate limiting (#123)`
 
+## Data Engineering Deployment
+
+Airflow deployment documentation is available at `data-engineering/README.md`.
+
 ### Commit Message Examples
 
 Branch name examples (ticketed):
