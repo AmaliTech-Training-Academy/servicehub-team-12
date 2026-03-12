@@ -100,7 +100,7 @@ with Diagram("ServiceHub Architecture (Optimized Private Airflow)", show=False, 
 
             with Cluster("Private Subnets", graph_attr=get_cluster_attr(COLORS["cluster_bg_private"], "Private Subnets (Compute & Data Tier)")):
                 airflow_ec2 = EC2("EC2 Instance\n(Docker Host)")
-                airflow_sidecar = Docker("S3 Sync Sidecar\n(aws-cli)")
+                airflow_sidecar = Docker("Deployment Sidecar\n(aws-cli + SSM)")
                 airflow_app = Airflow("Airflow Services")
                 rds_db = RDS("Amazon RDS\n(PostgreSQL 16)")
                 
@@ -119,7 +119,7 @@ with Diagram("ServiceHub Architecture (Optimized Private Airflow)", show=False, 
     gh_actions >> create_positioned_edge(COLORS["edge_ci"], "OIDC Authenticated Push\n(aws s3 sync)", style="solid", width="1.5") >> s3_dags
     
     # CORRECTED: S3 pull initiated by sidecar routing through Gateway Endpoint (Free & Fast)
-    airflow_sidecar >> create_positioned_edge(COLORS["edge_ci"], "Cron Sync (Pull)", style="dashed", width="1.5") >> s3_endpoint
+    airflow_sidecar >> create_positioned_edge(COLORS["edge_ci"], "Event Deploy (Pull)", style="dashed", width="1.5") >> s3_endpoint
     s3_endpoint >> create_positioned_edge(COLORS["edge_ci"], "AWS Internal", style="dashed", width="1.5") >> s3_dags
     airflow_sidecar >> create_positioned_edge(COLORS["edge_logs"], "Shared Docker Volume", style="dotted") >> airflow_app
 

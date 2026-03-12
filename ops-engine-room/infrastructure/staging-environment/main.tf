@@ -77,12 +77,12 @@ module "ecr" {
 module "iam" {
   source = "./modules/iam"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  s3_dags_bucket_arn = module.ci_cd.s3_dags_bucket_arn
-  ecr_repository_arn = module.ecr.repository_arn
-  secret_arn         = module.secrets_manager.secret_arn
-  tags               = local.common_tags
+  project_name                  = var.project_name
+  environment                   = var.environment
+  s3_data_engineering_bucket_arn = module.ci_cd.s3_data_engineering_bucket_arn
+  ecr_repository_arn            = module.ecr.repository_arn
+  secret_arn                    = module.secrets_manager.secret_arn
+  tags                          = local.common_tags
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ module "airflow_compute" {
   security_group_ids    = [module.security.ec2_airflow_security_group_id]
   instance_profile_name = module.iam.ec2_airflow_instance_profile_name
   ssh_public_key        = file(var.ssh_public_key_path)
-  s3_dags_bucket        = module.ci_cd.s3_dags_bucket_name
+  s3_data_engineering_bucket = module.ci_cd.s3_data_engineering_bucket_name
   db_host               = module.database.db_address
   db_name               = var.db_name
   db_username           = var.db_username

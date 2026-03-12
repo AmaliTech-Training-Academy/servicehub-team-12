@@ -25,5 +25,5 @@ jobs:
             run_checkov: true
             run_trivy: false
             run_sbom: true
-            deploy_dags: false
+            deploy_dags: true
         secrets: inherit

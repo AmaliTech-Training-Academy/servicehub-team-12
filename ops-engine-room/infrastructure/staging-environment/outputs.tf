@@ -69,9 +69,9 @@ output "github_actions_role_arn" {
   value       = module.ci_cd.github_actions_role_arn
 }
 
-output "s3_dags_bucket_name" {
-  description = "The name of the S3 bucket storing Airflow DAGs."
-  value       = module.ci_cd.s3_dags_bucket_name
+output "s3_data_engineering_bucket_name" {
+  description = "The name of the S3 bucket storing data engineering deployment artifacts."
+  value       = module.ci_cd.s3_data_engineering_bucket_name
 }
 
 # ── Secrets Manager ──────────────────────────────────────────────────────────
