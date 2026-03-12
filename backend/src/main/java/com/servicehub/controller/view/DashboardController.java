@@ -43,7 +43,7 @@ public class DashboardController {
         if (principal instanceof User user) {
             return switch (user.getRole()) {
                 case ADMIN -> "redirect:/dashboard/admin";
-                case AGENT -> "redirect:/dashboard/agent";
+                case AGENT -> "redirect:/requests/assigned";
                 default    -> "redirect:/dashboard/user";
             };
         }
@@ -142,4 +142,3 @@ public class DashboardController {
         return "dashboard/admin";
     }
 }
-

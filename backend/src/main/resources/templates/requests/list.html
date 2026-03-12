@@ -157,7 +157,6 @@
                   <svg class="size-3.5 ms-1 -me-0.5 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="hs-datatable-ordering-desc:text-primary" d="m7 15 5 5 5-5"></path><path class="hs-datatable-ordering-asc:text-primary" d="m7 9 5-5 5 5"></path></svg>
                 </div>
               </th>
-              <th scope="col" class="py-2 px-3 text-end font-normal text-sm text-muted-foreground-1 --exclude-from-ordering">Action</th>
             </tr>
           </thead>
 
@@ -175,28 +174,13 @@
               <td class="p-3 whitespace-nowrap text-sm font-medium text-foreground" th:text="${t.title}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.category}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.priority.name() == 'CRITICAL'} ? 'bg-red-100 text-red-800' :
-                                       (${t.priority.name() == 'HIGH'}   ? 'bg-orange-100 text-orange-800' :
-                                       (${t.priority.name() == 'MEDIUM'} ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'))"
-                      th:text="${t.priority}"></span>
+                <th:block th:replace="~{components/request-badges :: priorityBadge(${t.priority})}"></th:block>
               </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.status.name() == 'OPEN'}          ? 'bg-slate-100 text-slate-700' :
-                                       (${t.status.name() == 'ASSIGNED'}    ? 'bg-sky-100 text-sky-800' :
-                                       (${t.status.name() == 'IN_PROGRESS'} ? 'bg-amber-100 text-amber-800' :
-                                       (${t.status.name() == 'RESOLVED'}    ? 'bg-green-100 text-green-800' : 'bg-zinc-200 text-zinc-800')))"
-                      th:text="${t.status}"></span>
+                <th:block th:replace="~{components/request-badges :: statusBadge(${t.status})}"></th:block>
               </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.assignedAgentName} ?: '—'"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></td>
-              <td class="p-3 whitespace-nowrap text-end text-sm font-medium">
-                <a th:href="@{/requests/{id}(id=${t.id})}"
-                   class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg text-primary hover:text-primary-hover focus:outline-hidden focus:text-primary-focus disabled:opacity-50 disabled:pointer-events-none">
-                  View
-                </a>
-              </td>
             </tr>
           </tbody>
         </table>

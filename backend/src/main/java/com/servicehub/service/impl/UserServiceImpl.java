@@ -1,9 +1,12 @@
 package com.servicehub.service.impl;
 
 import com.servicehub.dto.UserDTO;
+import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
+import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +22,8 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final ServiceRequestRepository serviceRequestRepository;
+    private final ServiceRequestService serviceRequestService;
 
     // ── Queries ──────────────────────────────────────────────────────────────
 
@@ -45,7 +50,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void changeRole(UUID id, Role newRole) {
         User user = getOrThrow(id);
+        Role previousRole = user.getRole();
         user.setRole(newRole);
+
+        if (previousRole == Role.AGENT && newRole != Role.AGENT) {
+            reassignAgentTickets(user);
+        }
+
         userRepository.save(user);
     }
 
@@ -70,6 +81,17 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "User not found: " + id));
+    }
+
+    private void reassignAgentTickets(User formerAgent) {
+        List<ServiceRequest> assignedTickets = serviceRequestRepository.findAllByAssignedTo(formerAgent);
+
+        for (ServiceRequest ticket : assignedTickets) {
+            ticket.setAssignedTo(null);
+        }
+
+        serviceRequestRepository.saveAll(assignedTickets);
+        assignedTickets.forEach(ticket -> serviceRequestService.autoAssign(ticket.getId()));
     }
 
     /**
@@ -99,4 +121,3 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 }
-

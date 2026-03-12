@@ -28,6 +28,17 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
 
     Optional<ServiceRequest> findByIdAndRequester(UUID id, User requester);
 
+    @Query("""
+        SELECT COUNT(sr)
+        FROM   ServiceRequest sr
+        WHERE  sr.assignedTo = :assignedTo
+        AND    sr.status NOT IN :excluded
+        """)
+    long countByAssignedToAndStatusNotIn(
+        @Param("assignedTo") User assignedTo,
+        @Param("excluded") List<RequestStatus> excluded
+    );
+
     /**
      * Count of tickets that are currently breached and have not yet been
      * resolved or closed — drives the "Active Breaches (live)" KPI card.

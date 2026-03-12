@@ -38,11 +38,7 @@
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${t.requesterName}"></td>
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${t.category}"></td>
               <td class="px-5 py-3.5">
-                <span class="inline-flex items-center py-0.5 px-2 rounded text-xs font-bold uppercase tracking-wide"
-                      th:classappend="${t.priority == 'CRITICAL'} ? 'bg-red-100 text-red-700'   :
-                                       (${t.priority == 'HIGH'}   ? 'bg-amber-100 text-amber-700' :
-                                       (${t.priority == 'MEDIUM'} ? 'bg-blue-100 text-blue-700'   : 'bg-surface-1 text-muted-foreground-2'))"
-                      th:text="${t.priority}"></span>
+                <th:block th:replace="~{components/request-badges :: priorityBadge(${t.priority})}"></th:block>
               </td>
               <td class="px-5 py-3.5 text-sm text-muted-foreground-1"
                   th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></td>
@@ -66,4 +62,3 @@
   </div>
 </body>
 </html>
-
