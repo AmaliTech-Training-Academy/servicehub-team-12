@@ -18,9 +18,10 @@
 
     <!-- Search bar -->
     <form method="get" th:action="@{/admin/agents}" class="mb-4 flex gap-2">
-      <input type="text" name="q" th:value="${param.q}"
+      <label for="agent-search" class="sr-only">Search agents</label>
+      <input id="agent-search" type="text" name="q" th:value="${param.q}"
              placeholder="Search by name or email…"
-             class="flex-1 text-sm bg-card border border-card-line rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground-2 focus:outline-none focus:ring-2 focus:ring-primary/40"/>
+             class="flex-1 py-2.5 sm:py-3 px-4 rounded-lg block w-full bg-layer border border-layer-line sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none"/>
       <button type="submit"
               class="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
         Search
@@ -116,4 +117,3 @@
   </div>
 </body>
 </html>
-

@@ -7,6 +7,10 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # GitHub Actions OIDC Provider (already exists in this AWS account)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -94,26 +98,22 @@ resource "aws_iam_role_policy_attachment" "github_ecr_push" {
   policy_arn = aws_iam_policy.github_ecr_push.arn
 }
 
-# ── S3 DAGs Sync Policy ──
-resource "aws_iam_policy" "github_s3_sync" {
-  name        = "${local.name_prefix}-github-s3-sync-policy"
-  description = "Allow GitHub Actions to sync DAGs to S3"
+# ── S3 Data Engineering Artifact Upload Policy ──
+resource "aws_iam_policy" "github_s3_data_engineering_upload" {
+  name        = "${local.name_prefix}-github-s3-data-engineering-upload-policy"
+  description = "Allow GitHub Actions to upload data engineering artifacts to S3"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3DAGsSyncAccess"
+        Sid    = "S3DataEngineeringUploadAccess"
         Effect = "Allow"
         Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
+          "s3:PutObject"
         ]
         Resource = [
-          aws_s3_bucket.dags.arn,
-          "${aws_s3_bucket.dags.arn}/*"
+          "${aws_s3_bucket.data_engineering.arn}/*"
         ]
       }
     ]
@@ -126,26 +126,108 @@ resource "aws_iam_policy" "github_s3_sync" {
 
 resource "aws_iam_role_policy_attachment" "github_s3_sync" {
   role       = aws_iam_role.github_actions.name
-  policy_arn = aws_iam_policy.github_s3_sync.arn
+  policy_arn = aws_iam_policy.github_s3_data_engineering_upload.arn
+}
+
+# ── SSM Deploy Policy (least privilege via instance tag condition) ──
+resource "aws_iam_policy" "github_ssm_deploy" {
+  name        = "${local.name_prefix}-github-ssm-deploy-policy"
+  description = "Allow GitHub Actions to run SSM deployment commands on Airflow host"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SSMSendCommandRunShellDocument"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript"
+      },
+      {
+        Sid    = "SSMSendCommandToTaggedAirflowHost"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*"
+        Condition = {
+          StringEquals = {
+            "ssm:resourceTag/Role" = "AirflowDockerHost"
+          }
+        }
+      },
+      {
+        Sid    = "SSMReadCommandStatus"
+        Effect = "Allow"
+        Action = [
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommandInvocations",
+          "ssm:ListCommands",
+          "ssm:DescribeInstanceInformation"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Module = "ci-cd"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "github_ssm_deploy" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.github_ssm_deploy.arn
+}
+
+# ── Secrets Manager Read Policy for deployment-time DB password fetch ──
+resource "aws_iam_policy" "github_secretsmanager_rds_read" {
+  name        = "${local.name_prefix}-github-secretsmanager-rds-read-policy"
+  description = "Allow GitHub Actions to read the RDS credentials secret"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ReadRDSCredentialsSecret"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${local.name_prefix}/rds/credentials*"
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Module = "ci-cd"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "github_secretsmanager_rds_read" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.github_secretsmanager_rds_read.arn
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# S3 Bucket for Airflow DAGs (Source of Truth)
+# S3 Bucket for Data Engineering Artifacts
 # ──────────────────────────────────────────────────────────────────────────────
 
-resource "aws_s3_bucket" "dags" {
-  bucket        = "${local.name_prefix}-airflow-dags"
+resource "aws_s3_bucket" "data_engineering" {
+  bucket        = "${local.name_prefix}-data-engineering"
   force_destroy = false
 
   tags = merge(var.tags, {
-    Name   = "${local.name_prefix}-airflow-dags"
+    Name   = "${local.name_prefix}-data-engineering"
     Module = "ci-cd"
   })
 }
 
 # ── Secure Default: Versioning Enabled ──
-resource "aws_s3_bucket_versioning" "dags" {
-  bucket = aws_s3_bucket.dags.id
+resource "aws_s3_bucket_versioning" "data_engineering" {
+  bucket = aws_s3_bucket.data_engineering.id
 
   versioning_configuration {
     status = "Enabled"
@@ -153,8 +235,8 @@ resource "aws_s3_bucket_versioning" "dags" {
 }
 
 # ── Secure Default: Encryption at Rest ──
-resource "aws_s3_bucket_server_side_encryption_configuration" "dags" {
-  bucket = aws_s3_bucket.dags.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "data_engineering" {
+  bucket = aws_s3_bucket.data_engineering.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -165,8 +247,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "dags" {
 }
 
 # ── Secure Default: Block All Public Access ──
-resource "aws_s3_bucket_public_access_block" "dags" {
-  bucket = aws_s3_bucket.dags.id
+resource "aws_s3_bucket_public_access_block" "data_engineering" {
+  bucket = aws_s3_bucket.data_engineering.id
 
   block_public_acls       = true
   block_public_policy     = true

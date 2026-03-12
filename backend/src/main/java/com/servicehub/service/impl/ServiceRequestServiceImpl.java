@@ -13,6 +13,7 @@ import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.assignment.AutoAssignmentStrategy;
 import com.servicehub.service.ServiceRequestService;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +34,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ServiceRequestMapper serviceRequestMapper;
+    private final AutoAssignmentStrategy autoAssignmentStrategy;
 
     @Override
     @Transactional
@@ -75,6 +77,18 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User"));
         return mapRequesterRequests(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceRequestResponse> findAllByAssignedToId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        return serviceRequestRepository.findAllByAssignedTo(user).stream()
+                .sorted(Comparator.comparing(ServiceRequest::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(serviceRequestMapper::toResponse)
+                .toList();
     }
 
     @Override
@@ -143,6 +157,19 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             eventPublisher.publishEvent(new ServiceRequestCreatedEvent(savedRequest));
         }
         return serviceRequestMapper.toResponse(savedRequest);
+    }
+
+    @Override
+    @Transactional
+    public void autoAssign(UUID id) {
+        ServiceRequest serviceRequest = getRequestOrThrow(id);
+
+        if (serviceRequest.getAssignedTo() != null || serviceRequest.getDepartment() == null) {
+            return;
+        }
+
+        autoAssignmentStrategy.selectAssignee(serviceRequest)
+                .ifPresent(serviceRequest::setAssignedTo);
     }
 
     @Override

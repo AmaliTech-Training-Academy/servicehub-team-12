@@ -13,14 +13,16 @@ import static org.hamcrest.Matchers.*;
 public class SlaTest extends BaseTest {
 
     private String authToken;
+    private String requesterId;
 
     /**
-     * Authenticates as admin before all tests run.
-     * Extracts and stores the JWT token for use in all test methods.
+     * Authenticates as admin and retrieves the requesterId dynamically
+     * from the login response before all tests run.
      */
     @BeforeAll
     public void authenticate() {
         authToken = TestHelper.getAuthToken();
+        requesterId = TestHelper.getRequesterId();
     }
 
     /**
@@ -31,7 +33,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testSlaDeadlineSetOnCreate() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -50,7 +52,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testIsSlaBreachedFalseOnCreate() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -69,7 +71,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testIsSlaBreachedFieldPresent() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -90,7 +92,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testFirstResponseAtSetOnAssigned() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
         TestHelper.transitionTimes(authToken, requestId, 1); // OPEN → ASSIGNED
 
         given()
@@ -111,7 +113,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testFirstResponseAtNotOverwrittenAfterAssigned() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
         TestHelper.transitionTimes(authToken, requestId, 2); // OPEN → ASSIGNED → IN_PROGRESS
 
         given()
@@ -132,7 +134,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testResolvedAtSetOnResolved() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
         TestHelper.transitionTimes(authToken, requestId, 3); // OPEN → ASSIGNED → IN_PROGRESS → RESOLVED
 
         given()
@@ -152,7 +154,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testResolvedAtNullBeforeResolved() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
 
         given()
                 .header("Authorization", "Bearer " + authToken)
@@ -172,7 +174,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testClosedAtSetOnClosed() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
         TestHelper.transitionTimes(authToken, requestId, 4); // OPEN → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED
 
         given()
@@ -192,7 +194,7 @@ public class SlaTest extends BaseTest {
      */
     @Test
     public void testClosedAtNullBeforeClosed() {
-        String requestId = TestHelper.createServiceRequest(authToken);
+        String requestId = TestHelper.createServiceRequest(authToken, requesterId);
 
         given()
                 .header("Authorization", "Bearer " + authToken)

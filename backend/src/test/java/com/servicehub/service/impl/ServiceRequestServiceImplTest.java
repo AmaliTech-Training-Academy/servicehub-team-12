@@ -21,9 +21,11 @@ import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestPriority;
 import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.model.enums.Role;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.assignment.AutoAssignmentStrategy;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,12 +58,16 @@ class ServiceRequestServiceImplTest {
     @Mock
     private ServiceRequestMapper serviceRequestMapper;
 
+    @Mock
+    private AutoAssignmentStrategy autoAssignmentStrategy;
+
     private ServiceRequestServiceImpl serviceRequestService;
 
     @BeforeEach
     void setUp() {
         serviceRequestService = new ServiceRequestServiceImpl(
-                serviceRequestRepository, departmentRepository, userRepository, eventPublisher, serviceRequestMapper);
+                serviceRequestRepository, departmentRepository, userRepository, eventPublisher, serviceRequestMapper,
+                autoAssignmentStrategy);
     }
 
     @Test
@@ -231,6 +237,60 @@ class ServiceRequestServiceImplTest {
     }
 
     @Test
+    @DisplayName("autoAssign: assigns strategy-selected agent in routed department")
+    void autoAssignShouldAssignStrategySelectedAgent() {
+        UUID requestId = UUID.randomUUID();
+        ServiceRequest request = serviceRequest(requestId, "Route me");
+        request.setDepartment(department(UUID.randomUUID(), RequestCategory.IT_SUPPORT));
+
+        User agent = user(UUID.randomUUID());
+        agent.setRole(Role.AGENT);
+        agent.setDepartment("IT");
+
+        when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(autoAssignmentStrategy.selectAssignee(request))
+                .thenReturn(Optional.of(agent));
+
+        serviceRequestService.autoAssign(requestId);
+
+        assertEquals(agent.getId(), request.getAssignedTo().getId());
+    }
+
+    @Test
+    @DisplayName("autoAssign: leaves request unchanged when already assigned")
+    void autoAssignShouldNotOverrideExistingAssignment() {
+        UUID requestId = UUID.randomUUID();
+        ServiceRequest request = serviceRequest(requestId, "Already assigned");
+        User existingAgent = user(UUID.randomUUID());
+        existingAgent.setRole(Role.AGENT);
+        request.setAssignedTo(existingAgent);
+        request.setDepartment(department(UUID.randomUUID(), RequestCategory.IT_SUPPORT));
+
+        when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+
+        serviceRequestService.autoAssign(requestId);
+
+        assertEquals(existingAgent.getId(), request.getAssignedTo().getId());
+        verify(autoAssignmentStrategy, never()).selectAssignee(any());
+    }
+
+    @Test
+    @DisplayName("autoAssign: leaves request unassigned when no department agent exists")
+    void autoAssignShouldLeaveRequestUnassignedWhenNoMatchingAgentExists() {
+        UUID requestId = UUID.randomUUID();
+        ServiceRequest request = serviceRequest(requestId, "No agent available");
+        request.setDepartment(department(UUID.randomUUID(), RequestCategory.IT_SUPPORT));
+
+        when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(autoAssignmentStrategy.selectAssignee(request))
+                .thenReturn(Optional.empty());
+
+        serviceRequestService.autoAssign(requestId);
+
+        assertNull(request.getAssignedTo());
+    }
+
+    @Test
     @DisplayName("create: leaves firstResponseAt null when initial status is OPEN")
     void createShouldNotSetFirstResponseAtWhenStatusIsOpen() {
         UUID requesterId = UUID.randomUUID();
@@ -259,6 +319,7 @@ class ServiceRequestServiceImplTest {
         user.setId(id);
         user.setEmail("user@amalitech.com");
         user.setFullName("User");
+        user.setRole(Role.USER);
         return user;
     }
 

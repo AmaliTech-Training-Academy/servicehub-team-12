@@ -3,6 +3,7 @@ package com.servicehub.service.impl;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.service.ServiceRequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class WorkflowServiceImplTest {
 
     @Mock
     private ServiceRequestRepository serviceRequestRepository;
+
+    @Mock
+    private ServiceRequestService serviceRequestService;
 
     private ServiceRequest testRequest;
 
@@ -53,6 +57,7 @@ class WorkflowServiceImplTest {
         assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
         assertNotNull(testRequest.getFirstResponseAt());
         assertNotNull(testRequest.getUpdatedAt());
+        verify(serviceRequestService).autoAssign(testRequest.getId());
     }
 
     @Test
@@ -67,6 +72,7 @@ class WorkflowServiceImplTest {
 
         assertEquals(RequestStatus.IN_PROGRESS, testRequest.getStatus());
         assertEquals(firstResponse, testRequest.getFirstResponseAt());
+        verify(serviceRequestService, never()).autoAssign(any());
     }
 
     @Test

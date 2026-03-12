@@ -75,20 +75,13 @@
             <tr th:each="t : ${scheduledTickets}" class="hover:bg-muted-hover transition-colors">
               <td class="px-5 py-3.5 text-sm font-medium text-foreground" th:text="${t.title}"></td>
               <td class="px-5 py-3.5">
-                <span class="inline-flex items-center py-0.5 px-2 rounded text-xs font-bold uppercase tracking-wide"
-                      th:classappend="${t.priority == 'CRITICAL'} ? 'bg-red-100 text-red-700'   :
-                                       (${t.priority == 'HIGH'}   ? 'bg-amber-100 text-amber-700' :
-                                       (${t.priority == 'MEDIUM'} ? 'bg-blue-100 text-blue-700'   : 'bg-surface-1 text-muted-foreground-2'))"
-                      th:text="${t.priority}"></span>
+                <th:block th:replace="~{components/request-badges :: priorityBadge(${t.priority})}"></th:block>
               </td>
               <td class="px-5 py-3.5 text-sm font-semibold"
                   th:classappend="${t.slaBreached} ? 'text-red-600' : 'text-foreground'"
                   th:text="${t.slaDeadline != null} ? ${#temporals.format(t.slaDeadline, 'dd MMM yyyy HH:mm')} : '—'"></td>
               <td class="px-5 py-3.5">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.status == 'ASSIGNED'}     ? 'bg-blue-50 text-blue-700'   :
-                                       (${t.status == 'IN_PROGRESS'} ? 'bg-amber-50 text-amber-700' : 'bg-surface-1 text-muted-foreground-2')"
-                      th:text="${t.status}"></span>
+                <th:block th:replace="~{components/request-badges :: statusBadge(${t.status})}"></th:block>
               </td>
               <td class="px-5 py-3.5 text-right">
                 <a th:href="@{/requests/{id}(id=${t.id})}"
@@ -103,4 +96,3 @@
   </div>
 </body>
 </html>
-

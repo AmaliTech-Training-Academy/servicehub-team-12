@@ -159,29 +159,35 @@ def transform_sla_metrics(
     return result[SLA_METRICS_COLUMNS]
 
 
-def transform_daily_volume(requests_df: pd.DataFrame) -> pd.DataFrame:
+def transform_daily_volume(aggregated_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute daily request volumes based on the analytics_daily_volume contract.
+    Prepare pre-aggregated daily request volumes for loading, based on the
+    analytics_daily_volume contract.
+
+    The heavy GROUP BY work is expected to be performed in the database
+    (see `extract_daily_volume_aggregates`). This function focuses on
+    type normalization and adding metadata columns.
     """
-    if requests_df is None or requests_df.empty:
-        logger.warning("Daily volume transform skipped: requests input is empty.")
+    if aggregated_df is None or aggregated_df.empty:
+        logger.warning("Daily volume transform skipped: aggregated input is empty.")
         return _empty_result(DAILY_VOLUME_COLUMNS)
 
-    working = _prepare_datetime_columns(requests_df.copy(), ["created_at"])
-    working["report_date"] = working["created_at"].dt.date
+    working = aggregated_df.copy()
+    working["report_date"] = pd.to_datetime(
+        working["report_date"], utc=True, errors="coerce"
+    ).dt.date
+    if "ticket_count" in working.columns:
+        working["ticket_count"] = working["ticket_count"].astype(int)
+    else:
+        working["ticket_count"] = 0
 
-    result = (
-        working.groupby(["report_date", "category", "priority", "status"], dropna=False)
-        .agg(ticket_count=("id", "count"))
-        .reset_index()
-    )
-    result["ticket_count"] = result["ticket_count"].astype(int)
-    result["last_updated_at"] = datetime.now(timezone.utc)
+    working["last_updated_at"] = datetime.now(timezone.utc)
 
     logger.info(
-        "Computed daily volume for %d report/category/priority/status groups", len(result)
+        "Computed daily volume for %d report/category/priority/status groups",
+        len(working),
     )
-    return result[DAILY_VOLUME_COLUMNS]
+    return working[DAILY_VOLUME_COLUMNS]
 
 
 def transform_agent_performance(requests_df: pd.DataFrame) -> pd.DataFrame:

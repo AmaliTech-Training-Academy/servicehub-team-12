@@ -34,18 +34,21 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv
 cd /tmp && unzip -q awscliv2.zip && ./aws/install
 cd /
 
+echo ">>> Installing and starting Amazon SSM Agent..."
+apt-get install -y amazon-ssm-agent
+systemctl enable amazon-ssm-agent
+systemctl restart amazon-ssm-agent
+
+echo ">>> Setting up data-engineering sync directory..."
+mkdir -p /opt/data-engineering
+chown -R ubuntu:ubuntu /opt/data-engineering
+
 echo ">>> Setting up DAGs sync directory..."
 mkdir -p /opt/airflow/dags
 chown -R ubuntu:ubuntu /opt/airflow
 
-echo ">>> Creating S3 DAG sync cron job (every 2 minutes)..."
-cat > /etc/cron.d/dag-sync << 'CRON'
-*/2 * * * * ubuntu /usr/local/bin/aws s3 sync s3://${s3_dags_bucket}/dags/ /opt/airflow/dags/ --region ${aws_region} --delete >> /var/log/dag-sync.log 2>&1
-CRON
-chmod 0644 /etc/cron.d/dag-sync
-
-echo ">>> Initial DAG sync..."
-su - ubuntu -c "/usr/local/bin/aws s3 sync s3://${s3_dags_bucket}/dags/ /opt/airflow/dags/ --region ${aws_region} --delete" || true
+echo ">>> Creating initialization script..."
+# Place any initial configurations here if needed.
 
 echo ">>> Installing CloudWatch agent..."
 curl -o /tmp/amazon-cloudwatch-agent.deb https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb

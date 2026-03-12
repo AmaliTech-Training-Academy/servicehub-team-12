@@ -24,14 +24,33 @@ public class TestHelper {
     }
 
     /**
+     * Logs in as admin and returns the user ID dynamically.
+     * Extracted directly from the login response — no hardcoding needed.
+     * id field was added to AuthResponse by @eugeneanokye99.
+     */
+    public static String getRequesterId() {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(AuthTestData.VALID_LOGIN_BODY)
+                .when()
+                .post("/api/v1/auth/login")
+                .then()
+                .statusCode(200)
+                .extract().path("id");
+    }
+
+    /**
      * Creates a new service request and returns its UUID.
      * Used by tests that need a valid request ID to test against.
+     *
+     * @param authToken   the JWT token for authentication
+     * @param requesterId the UUID of the user making the request
      */
-    public static String createServiceRequest(String authToken) {
+    public static String createServiceRequest(String authToken, String requesterId) {
         return given()
                 .contentType(ContentType.JSON)
                 .header("Authorization", "Bearer " + authToken)
-                .body(ServiceRequestTestData.VALID_CREATE_BODY)
+                .body(ServiceRequestTestData.validCreateBody(requesterId))
                 .when()
                 .post("/api/service-requests")
                 .then()
@@ -57,32 +76,5 @@ public class TestHelper {
                     .then()
                     .statusCode(200);
         }
-    }
-
-
-    /**
-     * Registers a new test user and returns their UUID.
-     * Used to get a valid requesterId for service request tests.
-     */
-    public static String getRequesterId(String authToken) {
-        String email = "requester_" + System.currentTimeMillis() + "@amalitech.com";
-
-        String registerBody = "{"
-                + "\"firstName\": \"Test\","
-                + "\"lastName\": \"Requester\","
-                + "\"email\": \"" + email + "\","
-                + "\"password\": \"Password123!\","
-                + "\"confirmPassword\": \"Password123!\","
-                + "\"department\": \"IT\""
-                + "}";
-
-        return given()
-                .contentType(ContentType.JSON)
-                .body(registerBody)
-                .when()
-                .post("/api/v1/auth/register")
-                .then()
-                .statusCode(200)
-                .extract().path("id");
     }
 }

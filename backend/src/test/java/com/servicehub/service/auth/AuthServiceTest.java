@@ -9,10 +9,13 @@ import com.servicehub.exception.EmailAlreadyExistsException;
 import com.servicehub.exception.InvalidCredentialsException;
 import com.servicehub.exception.InvalidRefreshTokenException;
 import com.servicehub.exception.PasswordMismatchException;
+import com.servicehub.model.Department;
 import com.servicehub.model.RefreshToken;
 import com.servicehub.model.TokenBlacklist;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.Role;
+import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.RefreshTokenRepository;
 import com.servicehub.repository.TokenBlacklistRepository;
 import com.servicehub.repository.UserRepository;
@@ -52,6 +55,7 @@ class AuthServiceTest {
 
 
     @Mock private UserRepository              userRepository;
+    @Mock private DepartmentRepository        departmentRepository;
     @Mock private RefreshTokenRepository      refreshTokenRepository;
     @Mock private TokenBlacklistRepository    tokenBlacklistRepository;
     @Mock private PasswordEncoder             passwordEncoder;
@@ -71,6 +75,7 @@ class AuthServiceTest {
 
     private User sampleUser;
     private RegisterRequest validRegisterRequest;
+    private Department itDepartment;
 
     @BeforeEach
     void setUp() {
@@ -86,6 +91,11 @@ class AuthServiceTest {
                 .provider("local")
                 .isActive(true)
                 .build();
+
+        itDepartment = new Department();
+        itDepartment.setId(UUID.randomUUID());
+        itDepartment.setName("IT");
+        itDepartment.setCategory(RequestCategory.IT_SUPPORT);
 
         validRegisterRequest = new RegisterRequest(
                 "John", "Doe", EMAIL, PASSWORD, PASSWORD, "IT");
@@ -103,6 +113,7 @@ class AuthServiceTest {
         @DisplayName("saves user and returns token pair on valid request")
         void register_validRequest_savesUserAndReturnsTokens() {
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+            when(departmentRepository.findByNameIgnoreCase("IT")).thenReturn(Optional.of(itDepartment));
             when(passwordEncoder.encode(PASSWORD)).thenReturn(ENCODED_PWD);
             when(userRepository.save(any(User.class))).thenReturn(sampleUser);
             when(jwtService.generateToken(any(User.class))).thenReturn(ACCESS_TOKEN);
@@ -111,6 +122,7 @@ class AuthServiceTest {
 
             AuthResponse response = authService.register(validRegisterRequest);
 
+            assertThat(response.getId()).isEqualTo(sampleUser.getId());
             assertThat(response.getToken()).isEqualTo(ACCESS_TOKEN);
             assertThat(response.getRefreshToken()).isNotBlank();
             assertThat(response.getEmail()).isEqualTo(EMAIL);
@@ -122,6 +134,7 @@ class AuthServiceTest {
         @DisplayName("saves user with correct field values")
         void register_validRequest_userHasCorrectFields() {
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+            when(departmentRepository.findByNameIgnoreCase("IT")).thenReturn(Optional.of(itDepartment));
             when(passwordEncoder.encode(PASSWORD)).thenReturn(ENCODED_PWD);
             when(userRepository.save(any(User.class))).thenReturn(sampleUser);
             when(jwtService.generateToken(any())).thenReturn(ACCESS_TOKEN);
@@ -138,6 +151,7 @@ class AuthServiceTest {
             assertThat(saved.getPassword()).isEqualTo(ENCODED_PWD);
             assertThat(saved.getRole()).isEqualTo(Role.USER);
             assertThat(saved.getDepartment()).isEqualTo("IT");
+            assertThat(saved.getDepartmentEntity()).isEqualTo(itDepartment);
             assertThat(saved.getProvider()).isEqualTo("local");
             assertThat(saved.isActive()).isTrue();
         }
@@ -146,6 +160,7 @@ class AuthServiceTest {
         @DisplayName("saves a refresh token with correct expiry and not revoked")
         void register_validRequest_refreshTokenSavedCorrectly() {
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+            when(departmentRepository.findByNameIgnoreCase("IT")).thenReturn(Optional.of(itDepartment));
             when(passwordEncoder.encode(PASSWORD)).thenReturn(ENCODED_PWD);
             when(userRepository.save(any())).thenReturn(sampleUser);
             when(jwtService.generateToken(any())).thenReturn(ACCESS_TOKEN);
@@ -196,8 +211,13 @@ class AuthServiceTest {
         void register_fullNameConcatenated() {
             RegisterRequest req = new RegisterRequest(
                     "Alice", "Smith", EMAIL, PASSWORD, PASSWORD, "HR");
+            Department hrDepartment = new Department();
+            hrDepartment.setId(UUID.randomUUID());
+            hrDepartment.setName("HR");
+            hrDepartment.setCategory(RequestCategory.HR_REQUEST);
 
             when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
+            when(departmentRepository.findByNameIgnoreCase("HR")).thenReturn(Optional.of(hrDepartment));
             when(passwordEncoder.encode(PASSWORD)).thenReturn(ENCODED_PWD);
             when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             when(jwtService.generateToken(any())).thenReturn(ACCESS_TOKEN);
@@ -235,6 +255,7 @@ class AuthServiceTest {
 
             AuthResponse response = authService.login(validLoginRequest);
 
+            assertThat(response.getId()).isEqualTo(sampleUser.getId());
             assertThat(response.getToken()).isEqualTo(ACCESS_TOKEN);
             assertThat(response.getRefreshToken()).isNotBlank();
             assertThat(response.getEmail()).isEqualTo(EMAIL);
@@ -317,6 +338,7 @@ class AuthServiceTest {
 
             AuthResponse response = authService.refresh(refreshRequest);
 
+            assertThat(response.getId()).isEqualTo(sampleUser.getId());
             assertThat(response.getToken()).isEqualTo(ACCESS_TOKEN);
             assertThat(response.getRefreshToken()).isNotBlank();
             assertThat(response.getEmail()).isEqualTo(EMAIL);
