@@ -53,30 +53,47 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 }
 
 window.addEventListener('load', () => {
-    const requestTableRoot = document.querySelector('#hs-datatable-filter');
-    const priorityEl = document.querySelector<HTMLSelectElement>('#hs-request-filter-priority');
-    const statusEl = document.querySelector<HTMLSelectElement>('#hs-request-filter-status');
+    const requestTableRoots = document.querySelectorAll<HTMLElement>('[data-request-table]');
 
-    if (requestTableRoot && window.HSDataTable) {
-        const { dataTable } = new window.HSDataTable('#hs-datatable-filter');
+    requestTableRoots.forEach((requestTableRoot) => {
+        if (!window.HSDataTable || !requestTableRoot.id) {
+            return;
+        }
+
+        const priorityEl = requestTableRoot.querySelector<HTMLSelectElement>('#hs-request-filter-priority');
+        const statusEl = requestTableRoot.querySelector<HTMLSelectElement>('#hs-request-filter-status');
+        const priorityColumnIndex = Number(requestTableRoot.dataset.priorityColumnIndex ?? '3');
+        const statusColumnIndex = Number(requestTableRoot.dataset.statusColumnIndex ?? '4');
+        let instance = window.HSDataTable.getInstance(requestTableRoot, true);
+
+        if (!instance) {
+            new window.HSDataTable(requestTableRoot);
+            instance = window.HSDataTable.getInstance(requestTableRoot, true);
+        }
+
+        if (!instance?.element?.dataTable) {
+            return;
+        }
+
+        const dataTable = instance.element.dataTable;
 
         dataTable.search.fixed('request-priority', (_searchStr: string, data: string[]) => {
             const priority = priorityEl?.value ?? '';
-            const rowPriority = (data[3] ?? '').trim();
+            const rowPriority = (data[priorityColumnIndex] ?? '').trim();
 
             return !priority || rowPriority === priority;
         });
 
         dataTable.search.fixed('request-status', (_searchStr: string, data: string[]) => {
             const status = statusEl?.value ?? '';
-            const rowStatus = (data[4] ?? '').trim();
+            const rowStatus = (data[statusColumnIndex] ?? '').trim();
 
             return !status || rowStatus === status;
         });
 
         priorityEl?.addEventListener('change', () => dataTable.draw());
         statusEl?.addEventListener('change', () => dataTable.draw());
-    }
+    });
 
     const inputs = document.querySelectorAll<HTMLInputElement>('.dt-container thead input');
 

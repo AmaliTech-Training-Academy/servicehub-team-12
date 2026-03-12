@@ -2,6 +2,7 @@ package com.servicehub.controller.view;
 
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
+import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class AdminController {
 
     private final UserService userService;
+    private final ServiceRequestService serviceRequestService;
 
     private void addCommonAttributes(Model model, User principal) {
         model.addAttribute("userRole", "ADMIN");
@@ -38,7 +40,7 @@ public class AdminController {
                               @RequestParam(required = false) String status,
                               @RequestParam(required = false) String category) {
         addCommonAttributes(model, principal);
-        model.addAttribute("allTickets", java.util.Collections.emptyList());
+        model.addAttribute("allTickets", serviceRequestService.findAll());
         return "admin/requests";
     }
 
