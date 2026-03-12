@@ -23,5 +23,7 @@ jobs:
             push_image: true
             run_data_tests: true
             run_checkov: true
+            run_trivy: false
+            run_sbom: true
             deploy_dags: false
         secrets: inherit
