@@ -21,6 +21,7 @@ public interface ServiceRequestService {
 
     ServiceRequestResponse update(UUID id, ServiceRequestUpsertRequest request);
 
+    void autoAssign(UUID id);
+
     void delete(UUID id);
 }
-

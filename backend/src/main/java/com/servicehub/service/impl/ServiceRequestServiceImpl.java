@@ -7,6 +7,7 @@ import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.Department;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.Role;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.exception.AccessDeniedException;
 import com.servicehub.exception.ResourceNotFoundException;
@@ -143,6 +144,20 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             eventPublisher.publishEvent(new ServiceRequestCreatedEvent(savedRequest));
         }
         return serviceRequestMapper.toResponse(savedRequest);
+    }
+
+    @Override
+    @Transactional
+    public void autoAssign(UUID id) {
+        ServiceRequest serviceRequest = getRequestOrThrow(id);
+
+        if (serviceRequest.getAssignedTo() != null || serviceRequest.getDepartment() == null) {
+            return;
+        }
+
+        userRepository.findFirstByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(
+                        Role.AGENT, serviceRequest.getDepartment().getName())
+                .ifPresent(serviceRequest::setAssignedTo);
     }
 
     @Override

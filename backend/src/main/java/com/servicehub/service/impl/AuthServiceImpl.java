@@ -6,13 +6,17 @@ import com.servicehub.dto.AuthResponse;
 import com.servicehub.dto.RefreshTokenRequest;
 import com.servicehub.dto.RegisterRequest;
 import com.servicehub.exception.EmailAlreadyExistsException;
+import com.servicehub.exception.DepartmentConfigurationException;
 import com.servicehub.exception.InvalidCredentialsException;
 import com.servicehub.exception.InvalidRefreshTokenException;
 import com.servicehub.exception.PasswordMismatchException;
+import com.servicehub.model.Department;
 import com.servicehub.model.RefreshToken;
 import com.servicehub.model.TokenBlacklist;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
+import com.servicehub.model.enums.UserDepartment;
+import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.RefreshTokenRepository;
 import com.servicehub.repository.TokenBlacklistRepository;
 import com.servicehub.repository.UserRepository;
@@ -43,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
     private long refreshExpiration;
 
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistRepository tokenBlacklistRepository;
     private final PasswordEncoder passwordEncoder;
@@ -61,12 +66,17 @@ public class AuthServiceImpl implements AuthService {
             throw new EmailAlreadyExistsException(request.getEmail());
         }
 
+        String departmentName = UserDepartment.normalize(request.getDepartment());
+        Department departmentEntity = departmentRepository.findByNameIgnoreCase(departmentName)
+                .orElseThrow(() -> new DepartmentConfigurationException(departmentName));
+
         User user = User.builder()
                 .email(request.getEmail())
                 .fullName(request.getFirstName() + " " + request.getLastName())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
-                .department(request.getDepartment())
+                .department(departmentName)
+                .departmentEntity(departmentEntity)
                 .provider("local")
                 .isActive(true)
                 .build();

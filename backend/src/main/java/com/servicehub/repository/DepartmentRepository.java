@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DepartmentRepository extends JpaRepository<Department, UUID> {
     Optional<Department> findByCategory(RequestCategory category);
+
+    Optional<Department> findByNameIgnoreCase(String name);
 }

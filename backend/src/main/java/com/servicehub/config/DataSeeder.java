@@ -1,8 +1,13 @@
 package com.servicehub.config;
 
+import com.servicehub.model.Department;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.Role;
+import com.servicehub.model.enums.UserDepartment;
+import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.UserRepository;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -18,13 +23,34 @@ public class DataSeeder implements CommandLineRunner {
     private static final String ADMIN_PASSWORD = "password123";
     private static final String ADMIN_NAME     = "System Administrator";
 
+    private final DepartmentRepository departmentRepository;
     private final UserRepository  userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     @SuppressWarnings("NullableProblems")
     public void run(String... args) {
+        seedDepartments();
         seedAdmin();
+    }
+
+    private void seedDepartments() {
+        seedDepartment(UserDepartment.IT);
+        seedDepartment(UserDepartment.HR);
+        seedDepartment(UserDepartment.FACILITIES);
+    }
+
+    private void seedDepartment(UserDepartment departmentDefinition) {
+        if (departmentRepository.findByNameIgnoreCase(departmentDefinition.getDisplayName()).isPresent()) {
+            return;
+        }
+
+        Department department = new Department();
+        department.setId(UUID.randomUUID());
+        department.setName(departmentDefinition.getDisplayName());
+        department.setCategory(departmentDefinition.getRequestCategory());
+        departmentRepository.save(department);
+        log.info("Department seeded: {}", departmentDefinition.getDisplayName());
     }
 
     private void seedAdmin() {
@@ -46,4 +72,3 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Admin user created: {}", ADMIN_EMAIL);
     }
 }
-

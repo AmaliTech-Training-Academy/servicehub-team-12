@@ -1,7 +1,9 @@
 package com.servicehub.model;
 
+import com.servicehub.model.enums.UserDepartment;
 import com.servicehub.model.enums.Role;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 import org.jspecify.annotations.NonNull;
@@ -44,7 +46,12 @@ public class User implements UserDetails {
     private Role role;
 
     @Column(name = "department_name")
+    @Pattern(regexp = "IT|HR|Facilities", message = "Department must be one of: IT, HR, Facilities")
     private String department;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department departmentEntity;
 
     /** "local" | "google" */
     @Column(nullable = false)
@@ -60,7 +67,13 @@ public class User implements UserDetails {
 
     @PrePersist
     protected void onCreate() {
+        department = UserDepartment.normalize(department);
         createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        department = UserDepartment.normalize(department);
     }
 
     // ── UserDetails ──────────────────────────────────────────────────────────
