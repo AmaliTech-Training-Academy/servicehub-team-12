@@ -7,13 +7,13 @@ import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.Department;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
-import com.servicehub.model.enums.Role;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.exception.AccessDeniedException;
 import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.assignment.AutoAssignmentStrategy;
 import com.servicehub.service.ServiceRequestService;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +34,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ServiceRequestMapper serviceRequestMapper;
+    private final AutoAssignmentStrategy autoAssignmentStrategy;
 
     @Override
     @Transactional
@@ -155,8 +156,7 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
             return;
         }
 
-        userRepository.findFirstByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(
-                        Role.AGENT, serviceRequest.getDepartment().getName())
+        autoAssignmentStrategy.selectAssignee(serviceRequest)
                 .ifPresent(serviceRequest::setAssignedTo);
     }
 
