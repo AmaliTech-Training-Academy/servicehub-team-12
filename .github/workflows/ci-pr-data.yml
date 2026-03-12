@@ -1,0 +1,32 @@
+name: PR CI (Data Engineering)
+
+on:
+    pull_request:
+        branches: [main]
+        paths:
+            - data-engineering/**
+            - .github/workflows/**
+
+concurrency:
+    group: pr-data-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    data:
+        name: Data Engineering PR checks
+        uses: ./.github/workflows/ci-reusable.yml
+        with:
+            run_checkstyle: false
+            run_tests: false
+            build_image: false
+            push_image: false
+            run_data_tests: true
+            run_checkov: false
+            run_trivy: false
+            run_sbom: false
+            deploy_dags: false
+        secrets: inherit
