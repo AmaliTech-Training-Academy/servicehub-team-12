@@ -179,6 +179,35 @@ resource "aws_iam_role_policy_attachment" "app_runner_cloudwatch" {
   policy_arn = aws_iam_policy.app_runner_cloudwatch.arn
 }
 
+# App Runner Secrets Manager policy
+resource "aws_iam_policy" "app_runner_secrets" {
+  name        = "${local.name_prefix}-apprunner-secrets-policy"
+  description = "Allow App Runner to read RDS credentials from Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SecretsManagerAccess"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = var.secret_arn
+      }
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Module = "iam"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "app_runner_secrets" {
+  role       = aws_iam_role.app_runner_instance.name
+  policy_arn = aws_iam_policy.app_runner_secrets.arn
+}
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # App Runner ECR Access Role

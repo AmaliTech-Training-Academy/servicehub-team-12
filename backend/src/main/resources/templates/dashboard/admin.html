@@ -146,9 +146,9 @@
             <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
             </svg>
-            30-Day Ticket Volume
+            Daily Ticket Volume
           </h3>
-          <canvas id="volumeChart" height="120"></canvas>
+          <div id="hs-volume-chart"></div>
         </div>
         <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
           <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
@@ -157,7 +157,7 @@
             </svg>
             Volume by Category
           </h3>
-          <canvas id="categoryChart" height="120"></canvas>
+          <div id="hs-category-chart"></div>
         </div>
       </div>
 
@@ -200,9 +200,23 @@
           <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
           </svg>
-          Avg Resolution Hours by Category &amp; Priority
+          Resolved vs Breached — by Category &amp; Priority
         </h3>
-        <canvas id="slaResolutionChart" height="90"></canvas>
+
+        <!-- Legend Indicator -->
+        <div class="flex justify-end items-center gap-x-4 mb-3">
+          <div class="inline-flex items-center">
+            <span class="size-2.5 inline-block bg-[--chart-colors-primary] rounded-xs me-2"></span>
+            <span class="text-[13px] text-muted-foreground-2">Resolved</span>
+          </div>
+          <div class="inline-flex items-center">
+            <span class="size-2.5 inline-block rounded-xs me-2" style="background-color: #dc2626;"></span>
+            <span class="text-[13px] text-muted-foreground-2">Breached</span>
+          </div>
+        </div>
+        <!-- End Legend Indicator -->
+
+        <div id="hs-sla-chart"></div>
       </div>
 
     </div>
@@ -220,25 +234,27 @@
             This Week's Leaderboard
           </h3>
 
-          <div th:if="${#lists.isEmpty(leaderboard)}" class="flex flex-col items-center justify-center py-8 text-center">
+          <div id="leaderboard-empty-msg" th:if="${#lists.isEmpty(leaderboard)}" class="flex flex-col items-center justify-center py-8 text-center">
             <svg class="size-8 text-muted-foreground-2 opacity-30 mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
             <p class="text-xs text-muted-foreground-2">No agent data for this week yet. ETL runs at midnight UTC.</p>
           </div>
 
-          <div th:each="a, aStat : ${leaderboard}"
-               class="flex items-center gap-3 py-3 border-b border-card-line last:border-b-0">
-            <div class="size-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                 th:classappend="${aStat.count == 1} ? 'bg-yellow-600' : (${aStat.count == 2} ? 'bg-slate-500' : (${aStat.count == 3} ? 'bg-amber-700' : 'bg-muted-foreground-2'))"
-                 th:text="${aStat.count}"></div>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-foreground" th:text="${a.agentName}"></p>
-              <p class="text-xs text-muted-foreground-2" th:text="|${a.ticketsResolved} resolved - ${a.avgResolutionHours}h avg|"></p>
+          <div id="leaderboard-list">
+            <div th:each="a, aStat : ${leaderboard}"
+                 class="flex items-center gap-3 py-3 border-b border-card-line last:border-b-0">
+              <div class="size-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                   th:classappend="${aStat.count == 1} ? 'bg-yellow-600' : (${aStat.count == 2} ? 'bg-slate-500' : (${aStat.count == 3} ? 'bg-amber-700' : 'bg-muted-foreground-2'))"
+                   th:text="${aStat.count}"></div>
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-foreground" th:text="${a.agentName}"></p>
+                <p class="text-xs text-muted-foreground-2" th:text="|${a.ticketsResolved} resolved - ${a.avgResolutionHours}h avg|"></p>
+              </div>
+              <span class="text-sm font-bold"
+                    th:classappend="${a.slaComplianceRatePct >= 90} ? 'text-green-600' : (${a.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
+                    th:text="|${a.slaComplianceRatePct}%|"></span>
             </div>
-            <span class="text-sm font-bold"
-                  th:classappend="${a.slaComplianceRatePct >= 90} ? 'text-green-600' : (${a.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
-                  th:text="|${a.slaComplianceRatePct}%|"></span>
           </div>
         </div>
 
@@ -253,12 +269,42 @@
         </div>
 
       </div>
+
+      <!-- Agent Weekly Performance Trend: Curved Area Multi-Line Chart -->
+      <div class="mt-4 bg-card border border-card-line rounded-xl p-5 shadow-2xs">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-1 flex items-center gap-2">
+          <svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          Weekly Performance Trend
+        </h3>
+        <p class="text-xs text-muted-foreground-2 mb-4">SLA Compliance Rate (%) · per agent · last 2 weeks</p>
+
+        <!-- Legend -->
+        <div class="flex justify-end items-center gap-x-4 mb-3">
+          <div class="inline-flex items-center">
+            <span class="size-2.5 inline-block rounded-xs me-2" style="background:#2563eb;"></span>
+            <span class="text-[13px] text-muted-foreground-2">Alice Johnson</span>
+          </div>
+          <div class="inline-flex items-center">
+            <span class="size-2.5 inline-block rounded-xs me-2" style="background:#16a34a;"></span>
+            <span class="text-[13px] text-muted-foreground-2">Bob Mensah</span>
+          </div>
+          <div class="inline-flex items-center">
+            <span class="size-2.5 inline-block rounded-xs me-2" style="background:#d97706;"></span>
+            <span class="text-[13px] text-muted-foreground-2">Kwame Boateng</span>
+          </div>
+        </div>
+
+        <div id="hs-agent-trend-chart"></div>
+      </div>
+
     </div>
 
     <!-- ═══════════ TAB 4: DEPARTMENTS ═══════════ -->
     <div id="departments" class="tab-panel hidden">
 
-      <div th:if="${#lists.isEmpty(deptWorkload)}"
+      <div id="dept-empty-msg" th:if="${#lists.isEmpty(deptWorkload)}"
            class="flex flex-col items-center justify-center py-16 text-center">
         <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -267,7 +313,7 @@
         <p class="text-xs text-muted-foreground-2 mt-1">ETL runs at midnight UTC.</p>
       </div>
 
-      <div th:if="${not #lists.isEmpty(deptWorkload)}"
+      <div id="dept-cards-grid" th:if="${not #lists.isEmpty(deptWorkload)}"
            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div th:each="dept : ${deptWorkload}" class="bg-card border border-card-line rounded-xl p-5 shadow-2xs">
           <h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">
@@ -328,17 +374,40 @@
       </span>
     </div>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script th:inline="javascript">
     "use strict";
 
     // Coerce every variable to an array — guards against Thymeleaf
     // injecting null when a model attribute is absent or null.
-    const dailyVolume  = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${dailyVolume}]]*/ null);
-    const slaMetrics   = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${slaMetrics}]]*/ null);
-    const leaderboard  = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${leaderboard}]]*/ null);
-    const deptWorkload = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${deptWorkload}]]*/ null);
+    const dailyVolume      = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${dailyVolume}]]*/ null);
+    const slaMetrics       = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${slaMetrics}]]*/ null);
+    const leaderboard      = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${leaderboard}]]*/ null);
+    const deptWorkload     = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${deptWorkload}]]*/ null);
+    const agentPerfHistory = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${agentPerfHistory}]]*/ null);
+    const deptPerfHistory  = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${deptPerfHistory}]]*/ null);
+
+    // Map camelCase Java DTO fields → snake_case expected by the trend-chart helpers.
+    var agentPerfData = agentPerfHistory.map(function (r) {
+      return {
+        agent_name:              r.agentName,
+        tickets_assigned:        r.ticketsAssigned,
+        tickets_resolved:        r.ticketsResolved,
+        avg_resolution_hours:    r.avgResolutionHours,
+        sla_compliance_rate_pct: r.slaComplianceRatePct,
+        week_start:              r.weekStart
+      };
+    });
+
+    var deptPerfData = deptPerfHistory.map(function (r) {
+      return {
+        department_name:      r.departmentName,
+        open_tickets:         r.openTickets,
+        resolved_tickets:     r.resolvedTickets,
+        breached_tickets:     r.breachedTickets,
+        avg_resolution_hours: r.avgResolutionHours,
+        week_start:           r.weekStart
+      };
+    });
 
     // ── Tab switching ─────────────────────────────────────────────
     // Runs immediately — the script is at the bottom of the body so
@@ -366,78 +435,18 @@
     })();
 
     // ── Charts ────────────────────────────────────────────────────
-    // Chart.js is loaded via a synchronous <script src> tag directly
-    // above this block, so `Chart` is available immediately here.
-    (function buildCharts() {
-      if (typeof Chart === 'undefined') return;
+    // Chart is exposed on window by the Vite module bundle (deferred).
+    // Wrapping in 'load' guarantees window.Chart is set before we use it.
+    window.addEventListener('load', function () {
+      (function buildCharts() {
+        if (typeof Chart === 'undefined') return;
 
       const P       = { blue: '#2563eb', green: '#16a34a', amber: '#d97706', red: '#dc2626', slate: '#94a3b8' };
       const PALETTE = [P.blue, P.green, P.amber, P.red, '#7c3aed', '#0891b2'];
       Chart.defaults.font.family = "'Inter', sans-serif";
       Chart.defaults.font.size   = 12;
 
-      // Volume chart
-      (function () {
-        const el = document.getElementById('volumeChart');
-        if (!el || !dailyVolume.length) return;
-        const dates      = [...new Set(dailyVolume.map(function (r) { return r.reportDate; }))].sort();
-        const categories = [...new Set(dailyVolume.map(function (r) { return r.category; }))];
-        const datasets   = categories.map(function (cat, i) {
-          return {
-            label: cat,
-            data: dates.map(function (date) {
-              return dailyVolume
-                .filter(function (r) { return r.reportDate === date && r.category === cat; })
-                .reduce(function (s, r) { return s + (r.ticketCount || 0); }, 0);
-            }),
-            borderColor: PALETTE[i], backgroundColor: PALETTE[i] + '1a',
-            borderWidth: 2, tension: 0.35, pointRadius: 2, fill: true,
-          };
-        });
-        new Chart(el, {
-          type: 'line',
-          data: { labels: dates, datasets: datasets },
-          options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
-            scales: { x: { grid: { display: false } }, y: { beginAtZero: true } },
-          },
-        });
-      })();
 
-      // Category doughnut chart
-      (function () {
-        const el = document.getElementById('categoryChart');
-        if (!el || !slaMetrics.length) return;
-        const catTotals = {};
-        slaMetrics.forEach(function (m) {
-          catTotals[m.category] = (catTotals[m.category] || 0) + (m.totalTickets || 0);
-        });
-        new Chart(el, {
-          type: 'doughnut',
-          data: {
-            labels: Object.keys(catTotals),
-            datasets: [{ data: Object.values(catTotals), backgroundColor: [P.blue, P.green, P.amber], borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }],
-          },
-          options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } },
-        });
-      })();
-
-      // SLA resolution horizontal bar chart
-      (function () {
-        const el = document.getElementById('slaResolutionChart');
-        if (!el || !slaMetrics.length) return;
-        const values = slaMetrics.map(function (m) { return parseFloat(m.avgResolutionHours) || 0; });
-        new Chart(el, {
-          type: 'bar',
-          data: {
-            labels: slaMetrics.map(function (m) { return m.category + ' / ' + m.priority; }),
-            datasets: [{ label: 'Avg Resolution Hours', data: values, backgroundColor: values.map(function (v) { return v < 12 ? P.green : v < 36 ? P.amber : P.red; }), borderRadius: 4, borderSkipped: false }],
-          },
-          options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { callback: function (v) { return v + 'h'; } } }, y: { grid: { display: false } } } },
-        });
-      })();
 
       // Agent SLA compliance bar chart
       (function () {
@@ -471,7 +480,759 @@
         });
       })();
 
-    })(); // end buildCharts
+      })(); // end buildCharts
+    }); // end load → Chart.js charts
+
+    // ── ApexCharts: Daily Ticket Volume ─────────────────────────
+    // buildChart/varToColor come from the Vite module bundle, which
+    // is deferred (type="module"). By the time the 'load' event fires
+    // the bundle has executed and both helpers are on window.
+    window.addEventListener('load', function () {
+      if (!dailyVolume.length || typeof window.buildChart !== 'function') return;
+
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+      // Aggregate total ticket count per day across all categories
+      var dateTotals = {};
+      dailyVolume.forEach(function (r) {
+        dateTotals[r.reportDate] = (dateTotals[r.reportDate] || 0) + (r.ticketCount || 0);
+      });
+      var dates  = Object.keys(dateTotals).sort();
+      var counts = dates.map(function (d) { return dateTotals[d]; });
+
+      window.buildChart('#hs-volume-chart', function (mode) {
+        return {
+          chart: {
+            type: 'bar',
+            height: 300,
+            toolbar: { show: false },
+            zoom: { enabled: false }
+          },
+          series: [{ name: 'Tickets', data: counts }],
+          plotOptions: {
+            bar: { horizontal: false, columnWidth: '16px', borderRadius: 0 }
+          },
+          legend: { show: false },
+          dataLabels: { enabled: false },
+          stroke: { show: true, width: 8, colors: ['transparent'] },
+          xaxis: {
+            categories: dates,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            crosshairs: { show: false },
+            labels: {
+              style: {
+                colors: window.varToColor('--chart-colors-xaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              offsetX: -2,
+              formatter: function (val) {
+                // "2026-03-01" → "Mar 01"
+                if (!val) return val;
+                var p = val.split('-');
+                return MONTHS[parseInt(p[1], 10) - 1] + ' ' + p[2];
+              }
+            }
+          },
+          yaxis: {
+            labels: {
+              align: 'left',
+              minWidth: 0,
+              maxWidth: 140,
+              style: {
+                colors: window.varToColor('--chart-colors-yaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              formatter: function (value) { return value >= 1000 ? (value / 1000) + 'k' : value; }
+            }
+          },
+          states: {
+            hover: { filter: { type: 'darken', value: 0.9 } }
+          },
+          tooltip: {
+            y: { formatter: function (value) { return value + ' tickets'; } },
+            custom: function (props) {
+              var title = props.ctx.opts.xaxis.categories[props.dataPointIndex];
+              return window.buildTooltip(props, {
+                title: title,
+                mode: mode,
+                hasTextLabel: true,
+                wrapperExtClasses: 'min-w-28',
+                labelDivider: ':',
+                labelExtClasses: 'ms-2'
+              });
+            }
+          },
+          responsive: [{
+            breakpoint: 568,
+            options: {
+              chart: { height: 300 },
+              plotOptions: { bar: { columnWidth: '14px' } },
+              stroke: { width: 8 },
+              yaxis: {
+                labels: {
+                  style: {
+                    colors: window.varToColor('--chart-colors-yaxis-labels'),
+                    fontSize: '11px',
+                    fontFamily: 'Inter, ui-sans-serif',
+                    fontWeight: 400
+                  },
+                  formatter: function (value) { return value >= 1000 ? (value / 1000) + 'k' : value; }
+                }
+              }
+            }
+          }]
+        };
+      }, function () {
+        return {
+          colors: [window.varToColor('--chart-colors-primary')],
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border') }
+        };
+      }, function () {
+        return {
+          colors: [window.varToColor('--chart-colors-primary-inverse')],
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels-inverse') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels-inverse') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border-inverse') }
+        };
+      });
+    }); // end load → volume chart
+
+    // ── ApexCharts: SLA Resolved vs Breached comparison ──────────
+    window.addEventListener('load', function () {
+      if (!slaMetrics.length || typeof window.buildChart !== 'function') return;
+
+      var labels   = slaMetrics.map(function (m) { return m.category + ' / ' + m.priority; });
+      var resolved = slaMetrics.map(function (m) { return m.resolvedTickets || 0; });
+      var breached = slaMetrics.map(function (m) { return m.breachedTickets || 0; });
+
+      window.buildChart('#hs-sla-chart', function (mode) {
+        return {
+          chart: {
+            type: 'bar',
+            height: 300,
+            toolbar: { show: false },
+            zoom: { enabled: false }
+          },
+          series: [
+            { name: 'Resolved', data: resolved },
+            { name: 'Breached', data: breached }
+          ],
+          plotOptions: {
+            bar: { horizontal: false, columnWidth: '14px', borderRadius: 0 }
+          },
+          legend: { show: false },
+          dataLabels: { enabled: false },
+          stroke: { show: true, width: 2, colors: ['transparent'] },
+          xaxis: {
+            categories: labels,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            crosshairs: { show: false },
+            labels: {
+              style: {
+                colors: window.varToColor('--chart-colors-xaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              offsetX: -2,
+              formatter: function (val) {
+                // "IT_SUPPORT / CRITICAL" → "IT_SUP / CRIT"
+                if (!val) return val;
+                var parts = val.split(' / ');
+                return parts[0].slice(0, 6) + ' / ' + parts[1].slice(0, 4);
+              }
+            }
+          },
+          yaxis: {
+            labels: {
+              align: 'left',
+              minWidth: 0,
+              maxWidth: 140,
+              style: {
+                colors: window.varToColor('--chart-colors-yaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              formatter: function (value) { return value >= 1000 ? (value / 1000) + 'k' : value; }
+            }
+          },
+          states: {
+            hover: { filter: { type: 'darken', value: 0.9 } }
+          },
+          tooltip: {
+            y: { formatter: function (value) { return value + ' tickets'; } },
+            custom: function (props) {
+              var title = props.ctx.opts.xaxis.categories[props.dataPointIndex];
+              return window.buildTooltip(props, {
+                title: title,
+                mode: mode,
+                hasTextLabel: true,
+                wrapperExtClasses: 'min-w-36',
+                labelDivider: ':',
+                labelExtClasses: 'ms-2'
+              });
+            }
+          },
+          responsive: [{
+            breakpoint: 568,
+            options: {
+              chart: { height: 300 },
+              plotOptions: { bar: { columnWidth: '14px' } },
+              stroke: { width: 8 },
+              yaxis: {
+                labels: {
+                  style: {
+                    colors: window.varToColor('--chart-colors-yaxis-labels'),
+                    fontSize: '11px',
+                    fontFamily: 'Inter, ui-sans-serif',
+                    fontWeight: 400
+                  },
+                  formatter: function (value) { return value >= 1000 ? (value / 1000) + 'k' : value; }
+                }
+              }
+            }
+          }]
+        };
+      }, function () {
+        return {
+          colors: [window.varToColor('--chart-colors-primary'), '#dc2626'],
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border') }
+        };
+      }, function () {
+        return {
+          colors: [window.varToColor('--chart-colors-primary-inverse'), '#ef4444'],
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels-inverse') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels-inverse') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border-inverse') }
+        };
+      });
+    }); // end load → SLA chart
+
+    // ── ApexCharts: Volume by Category (donut) ───────────────────
+    window.addEventListener('load', function () {
+      if (!slaMetrics.length || typeof window.buildChart !== 'function') return;
+
+      var DONUT_COLORS = ['#2563eb', '#16a34a', '#d97706'];
+
+      // Aggregate totalTickets per category
+      var catTotals = {};
+      slaMetrics.forEach(function (m) {
+        catTotals[m.category] = (catTotals[m.category] || 0) + (m.totalTickets || 0);
+      });
+      var catLabels = Object.keys(catTotals);
+      var catValues = catLabels.map(function (k) { return catTotals[k]; });
+
+      window.buildChart('#hs-category-chart', function (mode) {
+        return {
+          chart: {
+            type: 'donut',
+            height: 300
+          },
+          series: catValues,
+          labels: catLabels,
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '70%',
+                labels: {
+                  show: true,
+                  total: {
+                    show: true,
+                    label: 'Total',
+                    fontSize: '13px',
+                    fontFamily: 'Inter, ui-sans-serif',
+                    fontWeight: 400,
+                    formatter: function (w) {
+                      return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0);
+                    }
+                  },
+                  value: {
+                    fontSize: '22px',
+                    fontFamily: 'Inter, ui-sans-serif',
+                    fontWeight: 700
+                  }
+                }
+              }
+            }
+          },
+          legend: {
+            show: true,
+            position: 'bottom',
+            fontFamily: 'Inter, ui-sans-serif',
+            fontSize: '13px'
+          },
+          dataLabels: { enabled: false },
+          stroke: { width: 0 },
+          tooltip: {
+            custom: function (props) {
+              return window.buildTooltipForDonut(props, DONUT_COLORS);
+            }
+          },
+          responsive: [{
+            breakpoint: 568,
+            options: {
+              chart: { height: 260 }
+            }
+          }]
+        };
+      }, function () {
+        return {
+          colors: DONUT_COLORS,
+          legend: {
+            labels: { colors: window.varToColor('--chart-colors-xaxis-labels') }
+          },
+          plotOptions: {
+            pie: {
+              donut: {
+                labels: {
+                  total: { color: window.varToColor('--chart-colors-yaxis-labels') },
+                  value: { color: window.varToColor('--chart-colors-yaxis-labels') }
+                }
+              }
+            }
+          }
+        };
+      }, function () {
+        return {
+          colors: ['#3b82f6', '#22c55e', '#f59e0b'],
+          legend: {
+            labels: { colors: window.varToColor('--chart-colors-xaxis-labels-inverse') }
+          },
+          plotOptions: {
+            pie: {
+              donut: {
+                labels: {
+                  total: { color: window.varToColor('--chart-colors-yaxis-labels-inverse') },
+                  value: { color: window.varToColor('--chart-colors-yaxis-labels-inverse') }
+                }
+              }
+            }
+          }
+        };
+      });
+    }); // end load → category donut chart
+
+    // ── Leaderboard: dummy-data fallback ─────────────────────────
+    // Runs immediately (DOM is ready — script is at bottom of body).
+    // When the server populates `leaderboard` the th:each rows are
+    // already in #leaderboard-list, so children.length > 0 and we
+    // skip. When it's empty we hide the "no data" placeholder and
+    // render ranked rows from the most-recent week in agentPerfData.
+    (function () {
+      var list  = document.getElementById('leaderboard-list');
+      var empty = document.getElementById('leaderboard-empty-msg');
+      if (!list || list.children.length > 0) return; // real data already rendered
+
+      // Find the most-recent week available in the dummy data
+      var latestWeek = agentPerfData
+        .map(function (r) { return r.week_start; })
+        .sort()
+        .pop();
+
+      // Filter to that week and rank by SLA compliance desc
+      var ranked = agentPerfData
+        .filter(function (r) { return r.week_start === latestWeek; })
+        .slice()
+        .sort(function (a, b) { return b.sla_compliance_rate_pct - a.sla_compliance_rate_pct; });
+
+      if (!ranked.length) return;
+
+      // Hide the "no data" placeholder
+      if (empty) empty.style.display = 'none';
+
+      var rankBgs    = ['bg-yellow-600', 'bg-slate-500', 'bg-amber-700'];
+      var rankBgFb   = 'bg-muted-foreground-2'; // 4th+
+
+      ranked.forEach(function (agent, idx) {
+        var rank       = idx + 1;
+        var badgeCls   = rankBgs[idx] || rankBgFb;
+        var pctVal     = parseFloat(agent.sla_compliance_rate_pct);
+        var textColor  = pctVal >= 90 ? 'text-green-600' : (pctVal >= 70 ? 'text-amber-600' : 'text-red-600');
+
+        var row = document.createElement('div');
+        row.className = 'flex items-center gap-3 py-3 border-b border-card-line last:border-b-0';
+        row.innerHTML =
+          '<div class="size-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ' + badgeCls + '">' + rank + '</div>' +
+          '<div class="flex-1">' +
+            '<p class="text-sm font-semibold text-foreground">' + agent.agent_name + '</p>' +
+            '<p class="text-xs text-muted-foreground-2">' + agent.tickets_resolved + ' resolved · ' + agent.avg_resolution_hours + 'h avg</p>' +
+          '</div>' +
+          '<span class="text-sm font-bold ' + textColor + '">' + pctVal + '%</span>';
+        list.appendChild(row);
+      });
+    })();
+
+    // ── ApexCharts: Agent Weekly Performance — Curved Area Chart ─
+    window.addEventListener('load', function () {
+      if (typeof window.buildChart !== 'function') return;
+
+      // Derive sorted unique week labels from shared agentPerfData
+      var weeks = agentPerfData
+        .map(function (r) { return r.week_start; })
+        .filter(function (v, i, a) { return a.indexOf(v) === i; })
+        .sort();
+
+      // Unique agent names (insertion order)
+      var agentNames = [];
+      agentPerfData.forEach(function (r) {
+        if (agentNames.indexOf(r.agent_name) === -1) agentNames.push(r.agent_name);
+      });
+
+      // One series per agent — SLA compliance rate %
+      var trendSeries = agentNames.map(function (name) {
+        return {
+          name: name,
+          data: weeks.map(function (w) {
+            var rec = agentPerfData.filter(function (r) { return r.agent_name === name && r.week_start === w; })[0];
+            return rec ? rec.sla_compliance_rate_pct : null;
+          })
+        };
+      });
+
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      function fmtWeek(val) {
+        if (!val) return val;
+        var p = val.split('-');
+        return 'Wk of ' + MONTHS[parseInt(p[1], 10) - 1] + ' ' + p[2];
+      }
+
+      var COLORS_LIGHT = ['#2563eb', '#16a34a', '#d97706'];
+      var COLORS_DARK  = ['#3b82f6', '#22c55e', '#f59e0b'];
+
+      window.buildChart('#hs-agent-trend-chart', function (mode) {
+        return {
+          chart: {
+            height: 300,
+            type: 'area',
+            toolbar: { show: false },
+            zoom: { enabled: false }
+          },
+          series: trendSeries,
+          legend: { show: false },
+          dataLabels: { enabled: false },
+          stroke: { curve: 'smooth', width: 2 },
+          grid: { strokeDashArray: 2 },
+          fill: {
+            type: 'gradient',
+            gradient: {
+              type: 'vertical',
+              shadeIntensity: 1,
+              opacityFrom: 0.1,
+              opacityTo: 0.8
+            }
+          },
+          xaxis: {
+            type: 'category',
+            tickPlacement: 'on',
+            categories: weeks,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            crosshairs: {
+              stroke: { dashArray: 0 },
+              dropShadow: { show: false }
+            },
+            tooltip: { enabled: false },
+            labels: {
+              style: {
+                colors: window.varToColor('--chart-colors-xaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              formatter: function (val) { return fmtWeek(val); }
+            }
+          },
+          yaxis: {
+            min: 80,
+            max: 100,
+            tickAmount: 4,
+            labels: {
+              align: 'left',
+              minWidth: 0,
+              maxWidth: 140,
+              style: {
+                colors: window.varToColor('--chart-colors-yaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              formatter: function (value) { return value + '%'; }
+            }
+          },
+          tooltip: {
+            y: { formatter: function (value) { return value + '%'; } },
+            custom: function (props) {
+              var title = fmtWeek(props.ctx.opts.xaxis.categories[props.dataPointIndex]);
+              return window.buildTooltip(props, {
+                title: title,
+                mode: mode,
+                hasTextLabel: true,
+                wrapperExtClasses: 'min-w-44',
+                labelDivider: ':',
+                labelExtClasses: 'ms-2'
+              });
+            }
+          },
+          responsive: [{
+            breakpoint: 568,
+            options: {
+              chart: { height: 260 },
+              yaxis: {
+                labels: {
+                  style: {
+                    colors: window.varToColor('--chart-colors-yaxis-labels'),
+                    fontSize: '11px',
+                    fontFamily: 'Inter, ui-sans-serif',
+                    fontWeight: 400
+                  },
+                  formatter: function (value) { return value + '%'; }
+                }
+              }
+            }
+          }]
+        };
+      }, function () {
+        return {
+          colors: COLORS_LIGHT,
+          fill: {
+            gradient: {
+              shadeIntensity: 0.1,
+              opacityFrom: 0.5,
+              opacityTo: 0,
+              stops: [50, 100, 100, 100]
+            }
+          },
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border') }
+        };
+      }, function () {
+        return {
+          colors: COLORS_DARK,
+          fill: {
+            gradient: {
+              shadeIntensity: 0.1,
+              opacityFrom: 0.5,
+              opacityTo: 0,
+              stops: [50, 100, 100, 100]
+            }
+          },
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels-inverse') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels-inverse') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border-inverse') }
+        };
+      });
+    }); // end load → agent trend area chart
+
+    // ── Department cards: dummy-data fallback ─────────────────────
+    // Mirrors the leaderboard pattern: when deptWorkload is empty
+    // Thymeleaf renders neither the cards grid nor the bar chart.
+    // We inject the most-recent week's data as summary cards and
+    // show the trend chart regardless.
+    (function () {
+      var grid  = document.getElementById('dept-cards-grid');
+      var empty = document.getElementById('dept-empty-msg');
+
+      // If the server already rendered cards, do nothing
+      if (grid) return;
+
+      // Hide the "no data" placeholder
+      if (empty) empty.style.display = 'none';
+
+      // Build a new grid from the most-recent week in deptPerfData
+      var latestWeek = deptPerfData
+        .map(function (r) { return r.week_start; })
+        .sort()
+        .pop();
+
+      var weekData = deptPerfData.filter(function (r) { return r.week_start === latestWeek; });
+      if (!weekData.length) return;
+
+      // Insert a grid container before the trend chart card
+      var trendCard = document.getElementById('hs-dept-trend-chart');
+      var deptPanel = trendCard && trendCard.closest('#departments');
+      if (!deptPanel) return;
+
+      var newGrid = document.createElement('div');
+      newGrid.id = 'dept-cards-grid';
+      newGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6';
+
+      weekData.forEach(function (dept) {
+        var total      = dept.open_tickets + dept.resolved_tickets;
+        var resPct     = total > 0 ? Math.round((dept.resolved_tickets / total) * 100) : 0;
+        var card       = document.createElement('div');
+        card.className = 'bg-card border border-card-line rounded-xl p-5 shadow-2xs';
+        card.innerHTML =
+          '<h3 class="text-xs font-bold uppercase tracking-widest text-muted-foreground-2 mb-4 flex items-center gap-2">' +
+            '<svg class="size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>' +
+            dept.department_name +
+          '</h3>' +
+          '<div class="flex justify-between mb-4">' +
+            '<div class="text-center"><p class="text-2xl font-bold text-amber-600 leading-none">' + dept.open_tickets     + '</p><p class="text-xs uppercase tracking-wide text-muted-foreground-2 mt-1">Open</p></div>' +
+            '<div class="text-center"><p class="text-2xl font-bold text-green-600 leading-none">' + dept.resolved_tickets + '</p><p class="text-xs uppercase tracking-wide text-muted-foreground-2 mt-1">Resolved</p></div>' +
+            '<div class="text-center"><p class="text-2xl font-bold text-red-600 leading-none">'   + dept.breached_tickets + '</p><p class="text-xs uppercase tracking-wide text-muted-foreground-2 mt-1">Breached</p></div>' +
+          '</div>' +
+          '<p class="text-xs text-muted-foreground-2 mb-1">Resolution rate</p>' +
+          '<div class="h-1.5 bg-muted-hover rounded-full overflow-hidden mb-2"><div class="h-full rounded-full bg-primary" style="width:' + resPct + '%"></div></div>' +
+          '<p class="text-xs text-muted-foreground-2">Avg resolution: <strong>' + dept.avg_resolution_hours + 'h</strong></p>';
+        newGrid.appendChild(card);
+      });
+
+      // Insert the grid before the trend chart's parent card
+      var trendParent = trendCard.closest('.bg-card');
+      deptPanel.insertBefore(newGrid, trendParent);
+    })();
+
+    // ── ApexCharts: Dept Weekly Resolved Tickets — Straight-Line ─
+    window.addEventListener('load', function () {
+      if (typeof window.buildChart !== 'function') return;
+
+      // Derive sorted unique weeks
+      var deptWeeks = deptPerfData
+        .map(function (r) { return r.week_start; })
+        .filter(function (v, i, a) { return a.indexOf(v) === i; })
+        .sort();
+
+      // Unique department names (insertion order)
+      var deptNames = [];
+      deptPerfData.forEach(function (r) {
+        if (deptNames.indexOf(r.department_name) === -1) deptNames.push(r.department_name);
+      });
+
+      // One series per department — resolved_tickets over weeks
+      var deptSeries = deptNames.map(function (name) {
+        return {
+          name: name,
+          data: deptWeeks.map(function (w) {
+            var rec = deptPerfData.filter(function (r) { return r.department_name === name && r.week_start === w; })[0];
+            return rec ? rec.resolved_tickets : null;
+          })
+        };
+      });
+
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      function fmtDeptWeek(val) {
+        if (!val) return val;
+        var p = val.split('-');
+        return 'Wk of ' + MONTHS[parseInt(p[1], 10) - 1] + ' ' + p[2];
+      }
+
+      var DEPT_COLORS_LIGHT = ['#2563eb', '#16a34a', '#d97706'];
+      var DEPT_COLORS_DARK  = ['#3b82f6', '#22c55e', '#f59e0b'];
+
+      window.buildChart('#hs-dept-trend-chart', function (mode) {
+        return {
+          chart: {
+            height: 250,
+            type: 'line',
+            toolbar: { show: false },
+            zoom: { enabled: false }
+          },
+          series: deptSeries,
+          dataLabels: { enabled: false },
+          stroke: {
+            curve: 'straight',
+            width: [4, 4, 4],
+            dashArray: [0, 0, 0]
+          },
+          title:  { show: false },
+          legend: { show: false },
+          grid: {
+            strokeDashArray: 0,
+            borderColor: window.varToColor('--chart-colors-grid-border'),
+            padding: { top: -20, right: 0 }
+          },
+          xaxis: {
+            type: 'category',
+            categories: deptWeeks,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            tooltip: { enabled: false },
+            labels: {
+              offsetY: 5,
+              style: {
+                colors: window.varToColor('--chart-colors-xaxis-labels'),
+                fontSize: '13px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              formatter: function (val) { return fmtDeptWeek(val); }
+            }
+          },
+          yaxis: {
+            min: 0,
+            tickAmount: 4,
+            labels: {
+              align: 'left',
+              minWidth: 0,
+              maxWidth: 140,
+              style: {
+                colors: window.varToColor('--chart-colors-yaxis-labels'),
+                fontSize: '12px',
+                fontFamily: 'Inter, ui-sans-serif',
+                fontWeight: 400
+              },
+              formatter: function (value) { return value >= 1000 ? (value / 1000) + 'k' : value; }
+            }
+          },
+          tooltip: {
+            custom: function (props) {
+              var title = fmtDeptWeek(props.ctx.opts.xaxis.categories[props.dataPointIndex]);
+              return window.buildTooltip(props, {
+                title: title,
+                mode: mode,
+                hasTextLabel: true,
+                wrapperExtClasses: 'min-w-36',
+                labelDivider: ':',
+                labelExtClasses: 'ms-2'
+              });
+            }
+          },
+          responsive: [{
+            breakpoint: 568,
+            options: {
+              chart: { height: 220 },
+              yaxis: {
+                labels: {
+                  style: {
+                    colors: window.varToColor('--chart-colors-yaxis-labels'),
+                    fontSize: '11px',
+                    fontFamily: 'Inter, ui-sans-serif',
+                    fontWeight: 400
+                  }
+                }
+              }
+            }
+          }]
+        };
+      }, function () {
+        return {
+          colors: DEPT_COLORS_LIGHT,
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border') }
+        };
+      }, function () {
+        return {
+          colors: DEPT_COLORS_DARK,
+          xaxis: { labels: { style: { colors: window.varToColor('--chart-colors-xaxis-labels-inverse') } } },
+          yaxis: { labels: { style: { colors: window.varToColor('--chart-colors-yaxis-labels-inverse') } } },
+          grid:  { borderColor: window.varToColor('--chart-colors-grid-border-inverse') }
+        };
+      });
+    }); // end load → dept trend straight-line chart
+
   </script>
 
   </div>

@@ -27,6 +27,14 @@ on:
                 type: boolean
                 required: false
                 default: false
+            run_trivy:
+                type: boolean
+                required: false
+                default: false
+            run_sbom:
+                type: boolean
+                required: false
+                default: false
             deploy_dags:
                 type: boolean
                 required: false
@@ -58,6 +66,41 @@ jobs:
             - name: Run checkstyle
               working-directory: backend
               run: mvn -B -DskipTests checkstyle:check
+
+    trivy:
+        permissions:
+            contents: read
+            id-token: write
+        name: Trivy Security Scan
+        runs-on: ubuntu-latest
+        if: inputs.run_trivy
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Run Trivy vulnerability scanner
+              uses: aquasecurity/trivy-action@master
+              with:
+                  scan-type: 'fs'
+                  format: 'table'
+                  exit-code: '1'
+                  severity: 'CRITICAL,HIGH'
+
+    sbom:
+        permissions:
+            contents: read
+        name: Generate SBOM
+        runs-on: ubuntu-latest
+        if: inputs.run_sbom
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Generate SBOM
+              uses: anchore/sbom-action@v0
+              with:
+                  format: 'spdx-json'
+                  artifact-name: 'sbom.spdx.json'
 
     checkov:
         permissions:

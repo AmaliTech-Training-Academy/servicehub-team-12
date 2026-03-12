@@ -22,6 +22,11 @@ variable "ecr_repository_arn" {
   type        = string
 }
 
+variable "secret_arn" {
+  description = "ARN of the Secrets Manager secret for App Runner access."
+  type        = string
+}
+
 variable "tags" {
   description = "A map of tags to apply to all resources in this module."
   type        = map(string)

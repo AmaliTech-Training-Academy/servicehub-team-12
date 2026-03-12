@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -90,6 +91,16 @@ public class GlobalAuthExceptionHandler {
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
         String message = ex.getReason() == null ? status.getReasonPhrase() : ex.getReason();
         return buildResponse(status, status.getReasonPhrase(), message, null);
+    }
+  
+    // ── 404 – static resource not found ─────────────────────────────────────
+    // Browsers and devtools probe well-known paths (e.g. /.well-known/…).
+    // Handled here at DEBUG level to avoid ERROR noise in the logs.
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex) {
+        log.debug("Static resource not found: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, "Not Found", "The requested resource was not found.", null);
     }
 
     // ── Fallback ─────────────────────────────────────────────────────────────
