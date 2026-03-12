@@ -23,13 +23,13 @@
     <div class="bg-card border border-card-line rounded-xl shadow-2xs mb-4">
       <form th:action="@{/admin/users}" method="get" class="flex gap-3 p-4 items-end">
         <div class="flex-1">
-          <label class="block text-xs font-medium text-muted-foreground-2 mb-1">Search</label>
-          <input type="text" name="q" th:value="${param.q}" placeholder="Name or email..."
-                 class="py-2 px-3 block w-full bg-background border border-card-line rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+          <label for="user-search" class="block text-xs font-medium text-muted-foreground-2 mb-1">Search</label>
+          <input id="user-search" type="text" name="q" th:value="${param.q}" placeholder="Name or email..."
+                 class="py-2.5 sm:py-3 px-4 rounded-lg block w-full bg-layer border border-layer-line sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-muted-foreground-2 mb-1">Role</label>
-          <select name="role" class="py-2 px-3 block bg-background border border-card-line rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition">
+          <label for="user-role-filter" class="block text-xs font-medium text-muted-foreground-2 mb-1">Role</label>
+          <select id="user-role-filter" name="role" class="min-w-36 py-2.5 sm:py-3 px-4 pe-10 block bg-layer border border-layer-line rounded-lg sm:text-sm text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
             <option value="">All roles</option>
             <option value="USER"  th:selected="${param.role == 'USER'}">User</option>
             <option value="AGENT" th:selected="${param.role == 'AGENT'}">Agent</option>
@@ -120,4 +120,3 @@
   </div>
 </body>
 </html>
-
