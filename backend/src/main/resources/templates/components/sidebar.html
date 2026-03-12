@@ -55,7 +55,7 @@
                             </li>
                             <li>
                                 <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
-                                    th:href="@{/requests}">
+                                    th:href="@{/admin/requests}">
                                     <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
                                         <path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
@@ -85,28 +85,7 @@
                                     </ul>
                                 </div>
                             </li>
-                            <li class="hs-accordion" id="admin-reports-accordion">
-                                <button type="button"
-                                    class="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
-                                    aria-expanded="false" aria-controls="admin-reports-accordion-collapse">
-                                    <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M15.5 2H8.6c-.4 0-.8.2-1.1.5-.3.3-.5.7-.5 1.1v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8c.4 0 .8-.2 1.1-.5.3-.3.5-.7.5-1.1V6.5L15.5 2z" />
-                                        <path d="M3 7.6v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8" /><path d="M15 2v5h5" />
-                                    </svg>
-                                    Reports
-                                    <svg class="hs-accordion-active:block ms-auto hidden size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6" /></svg>
-                                    <svg class="hs-accordion-active:hidden ms-auto block size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                </button>
-                                <div id="admin-reports-accordion-collapse"
-                                    class="hs-accordion-content w-full overflow-hidden transition-[height] duration-300 hidden"
-                                    role="region" aria-labelledby="admin-reports-accordion">
-                                    <ul class="pt-1 ps-7 space-y-1">
-                                        <li><a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus" th:href="@{/admin/reports/sla}">SLA Reports</a></li>
-                                        <li><a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus" th:href="@{/admin/reports/performance}">Agent Performance</a></li>
-                                    </ul>
-                                </div>
-                            </li>
-                            <li>
+                            <!-- <li>
                                 <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
                                     th:href="@{/admin/settings}">
                                     <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -117,7 +96,7 @@
                                     </svg>
                                     Settings
                                 </a>
-                            </li>
+                            </li> -->
                         </ul>
 
                         <!-- ==================== AGENT NAV ==================== -->
@@ -174,7 +153,9 @@
                         </ul>
 
                         <!-- ==================== USER (DEFAULT) NAV ==================== -->
-                        <ul th:if="${role == null or role == 'USER'}" class="space-y-1">
+                        <ul th:if="${role == null or role == 'USER'}"
+                            th:with="userRequestsOpen=${requestPath == '/requests' or requestPath == '/requests/new' or requestPath == '/requests/history' or #strings.startsWith(requestPath, '/requests/')}"
+                            class="space-y-1">
                             <li>
                                 <a class="flex items-center gap-x-3.5 py-2 px-2.5 bg-sidebar-nav-active text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
                                     th:href="@{/dashboard/user}">
@@ -184,35 +165,34 @@
                                     Dashboard
                                 </a>
                             </li>
-                            <li>
-                                <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
-                                    th:href="@{/requests/new}">
-                                    <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                                    </svg>
-                                    New Request
-                                </a>
-                            </li>
-                            <li>
-                                <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
-                                    th:href="@{/requests}">
+                            <li class="hs-accordion"
+                                id="user-requests-accordion"
+                                th:classappend="${userRequestsOpen} ? ' active'">
+                                <button type="button"
+                                    class="hs-accordion-toggle w-full text-start flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
+                                    th:classappend="${userRequestsOpen} ? ' bg-sidebar-nav-active'"
+                                    th:attr="aria-expanded=${userRequestsOpen}"
+                                    aria-expanded="false" aria-controls="user-requests-accordion-collapse">
                                     <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
                                         <path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
                                     </svg>
-                                    My Requests
-                                </a>
+                                    Requests
+                                    <svg class="hs-accordion-active:block ms-auto hidden size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6" /></svg>
+                                    <svg class="hs-accordion-active:hidden ms-auto block size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                </button>
+                                <div id="user-requests-accordion-collapse"
+                                    class="hs-accordion-content w-full overflow-hidden transition-[height] duration-300 hidden"
+                                    th:classappend="${userRequestsOpen} ? ' block'"
+                                    role="region" aria-labelledby="user-requests-accordion">
+                                    <ul class="pt-1 ps-7 space-y-1">
+                                        <li><a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus" th:classappend="${requestPath == '/requests/new'} ? ' bg-sidebar-nav-active'" th:href="@{/requests/new}">New Request</a></li>
+                                        <li><a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus" th:classappend="${requestPath == '/requests' or (#strings.startsWith(requestPath, '/requests/') and requestPath != '/requests/new' and requestPath != '/requests/history')} ? ' bg-sidebar-nav-active'" th:href="@{/requests}">My Requests</a></li>
+                                        <!-- <li><a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus" th:classappend="${requestPath == '/requests/history'} ? ' bg-sidebar-nav-active'" th:href="@{/requests/history}">Request History</a></li> -->
+                                    </ul>
+                                </div>
                             </li>
-                            <li>
-                                <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
-                                    th:href="@{/requests/history}">
-                                    <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
-                                    </svg>
-                                    Request History
-                                </a>
-                            </li>
-                            <li>
+                            <!-- <li>
                                 <a class="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-sidebar-nav-foreground rounded-lg hover:bg-sidebar-nav-hover focus:outline-hidden focus:bg-sidebar-nav-focus"
                                     th:href="@{/profile}">
                                     <svg class="size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -221,7 +201,7 @@
                                     </svg>
                                     My Profile
                                 </a>
-                            </li>
+                            </li> -->
                         </ul>
 
                     </div>
@@ -250,4 +230,3 @@
 </body>
 
 </html>
-

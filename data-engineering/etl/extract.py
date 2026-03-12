@@ -2,8 +2,6 @@
 Extraction layer for ServiceHub analytics ETL.
 """
 
-from typing import Optional
-
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -30,16 +28,22 @@ def extract_requests(engine: Engine) -> pd.DataFrame:
                sr.category,
                sr.priority,
                sr.status,
+               sr.requester_id,
+               sr.assigned_to_id,
+               sr.department_id,
                sr.sla_deadline,
                sr.first_response_at,
                sr.is_sla_breached,
                sr.created_at,
                sr.updated_at,
                sr.resolved_at,
-               u.full_name AS requester_name,
+               sr.closed_at,
+               requester.name AS requester_name,
+               assignee.name AS agent_name,
                d.name AS department_name
         FROM service_requests sr
-        JOIN users u ON sr.requester_id = u.id
+        JOIN users requester ON sr.requester_id = requester.id
+        LEFT JOIN users assignee ON sr.assigned_to_id = assignee.id
         LEFT JOIN departments d ON sr.department_id = d.id
         """
     )
@@ -47,8 +51,9 @@ def extract_requests(engine: Engine) -> pd.DataFrame:
         with engine.connect() as conn:
             df = pd.read_sql(query, conn)
             # Ensure UUID columns are parquet-friendly
-            if "id" in df.columns:
-                df["id"] = df["id"].astype(str)
+            for column in ("id", "requester_id", "assigned_to_id", "department_id"):
+                if column in df.columns:
+                    df[column] = df[column].astype("string")
             logger.info("Extracted %d service requests", len(df))
             return df
     except Exception as exc:
@@ -66,10 +71,9 @@ def extract_sla_policies(engine: Engine) -> pd.DataFrame:
             df = pd.read_sql(query, conn)
             # Ensure UUID columns are parquet-friendly
             if "id" in df.columns:
-                df["id"] = df["id"].astype(str)
+                df["id"] = df["id"].astype("string")
             logger.info("Extracted %d SLA policies", len(df))
             return df
     except Exception as exc:
         logger.error("Failed to extract SLA policies: %s", exc)
         raise ExtractionError("Failed to extract SLA policies") from exc
-

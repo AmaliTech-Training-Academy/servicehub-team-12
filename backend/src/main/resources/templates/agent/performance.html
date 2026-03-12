@@ -99,13 +99,12 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script th:inline="javascript">
       "use strict";
       const weekHistory = (function(v){ return Array.isArray(v) ? v : []; })(/*[[${weekHistory}]]*/ null);
 
-      (function () {
-        if (typeof Chart === 'undefined' || !weekHistory.length) return;
+      window.addEventListener('load', function () {
+        if (!weekHistory.length) return;
         Chart.defaults.font.family = "'Inter', sans-serif";
 
         const labels = weekHistory.map(function(w){ return 'Wk ' + w.weekStart; });
@@ -121,7 +120,7 @@
           data: { labels: labels, datasets: [{ label: 'Resolved', data: weekHistory.map(function(w){ return w.ticketsResolved || 0; }), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }] },
           options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
         });
-      })();
+      }); // end load
     </script>
 
   </div>

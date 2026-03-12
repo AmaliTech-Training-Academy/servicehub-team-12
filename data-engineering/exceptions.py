@@ -16,4 +16,3 @@ class LoadError(ETLBaseError):
 
 class DataValidationError(ETLBaseError):
     """Raised when input data fails validation checks."""
-

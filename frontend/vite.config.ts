@@ -19,6 +19,11 @@ function deleteStaticIndexHtml() {
 }
 export default defineConfig({
   plugins: [deleteStaticIndexHtml(), tailwindcss()],
+  resolve: {
+    alias: {
+      ApexCharts: 'apexcharts',
+    },
+  },
   build: {
     outDir: '../backend/src/main/resources/static',
     emptyOutDir: true,

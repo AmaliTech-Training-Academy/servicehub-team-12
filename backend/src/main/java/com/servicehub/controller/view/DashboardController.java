@@ -1,17 +1,42 @@
 package com.servicehub.controller.view;
 
+import com.servicehub.dto.AgentLeaderboardEntry;
+import com.servicehub.dto.DailyVolumeEntry;
+import com.servicehub.dto.DeptWorkloadEntry;
+import com.servicehub.dto.SlaMetricEntry;
+import com.servicehub.dto.ServiceRequestResponse;
+import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.service.DashboardAnalyticsService;
+import com.servicehub.service.ServiceRequestService;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.util.Collections;
-
 @Controller
 @RequestMapping("/dashboard")
+@RequiredArgsConstructor
 public class DashboardController {
+
+    private static final int RECENT_REQUEST_LIMIT = 5;
+
+    /** Statuses that are considered "done" — excluded from live breach queries. */
+    private static final List<RequestStatus> DONE_STATUSES =
+        List.of(RequestStatus.RESOLVED, RequestStatus.CLOSED);
+
+    private final ServiceRequestService     serviceRequestService;
+    private final DashboardAnalyticsService analyticsService;
+    private final ServiceRequestRepository  serviceRequestRepository;
 
     @GetMapping
     public String dashboard(@AuthenticationPrincipal Object principal) {
@@ -22,46 +47,99 @@ public class DashboardController {
                 default    -> "redirect:/dashboard/user";
             };
         }
-        // OAuth2 principal — default to user dashboard
         return "redirect:/dashboard/user";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT', 'USER')")
     @GetMapping("/user")
-    public String userDashboard(Model model) {
-        model.addAttribute("userRole", "USER");
-        model.addAttribute("myOpenCount", 0);
+    public String userDashboard(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "USER");
+        if (principal != null) {
+            model.addAttribute("currentUserName", principal.getFullName());
+            List<ServiceRequestResponse> userRequests =
+                    serviceRequestService.findAllByRequesterId(principal.getId());
+
+            long openCount     = userRequests.stream().filter(r -> r.getStatus() == RequestStatus.OPEN).count();
+            long resolvedCount = userRequests.stream().filter(r -> r.getStatus() == RequestStatus.RESOLVED).count();
+
+            model.addAttribute("myOpenCount",     openCount);
+            model.addAttribute("myResolvedCount", resolvedCount);
+            model.addAttribute("myTotalCount",    userRequests.size());
+            model.addAttribute("myRecentTickets", userRequests.stream().limit(RECENT_REQUEST_LIMIT).toList());
+            return "dashboard/user";
+        }
+
+        model.addAttribute("myOpenCount",     0);
         model.addAttribute("myResolvedCount", 0);
-        model.addAttribute("myTickets", Collections.emptyList());
+        model.addAttribute("myTotalCount",    0);
+        model.addAttribute("myRecentTickets", Collections.emptyList());
         return "dashboard/user";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
     @GetMapping("/agent")
-    public String agentDashboard(Model model) {
-        model.addAttribute("userRole", "AGENT");
+    public String agentDashboard(Model model, @AuthenticationPrincipal User principal) {
+        model.addAttribute("userRole", principal != null ? principal.getRole().name() : "AGENT");
+        if (principal != null) {
+            model.addAttribute("currentUserName", principal.getFullName());
+        }
         model.addAttribute("currentWeek", Collections.emptyList());
         return "dashboard/agent";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
-    public String adminDashboard(Model model) {
+    public String adminDashboard(Model model, @AuthenticationPrincipal User principal) {
         model.addAttribute("userRole", "ADMIN");
+        if (principal != null) {
+            model.addAttribute("currentUserName",  principal.getFullName());
+            model.addAttribute("currentUserEmail", principal.getEmail());
+        }
 
-        // KPI headline numbers
-        model.addAttribute("totalTickets", 0);
-        model.addAttribute("overallCompliance", 0);
-        model.addAttribute("totalBreached", 0);
-        model.addAttribute("activeBreaches", 0);
+        // ── Analytics tables — sourced from the Airflow ETL pipeline ─────────
+        // Each call returns an empty list when the ETL has not run yet, so the
+        // template's "no data" states render automatically without null-checks here.
+        List<SlaMetricEntry>        slaMetrics       = analyticsService.getSlaMetrics();
+        List<DailyVolumeEntry>      dailyVolume      = analyticsService.getDailyVolume();
+        List<AgentLeaderboardEntry> leaderboard      = analyticsService.getLeaderboard();
+        List<AgentLeaderboardEntry> agentPerfHistory = analyticsService.getAgentPerfHistory();
+        List<DeptWorkloadEntry>     deptWorkload     = analyticsService.getDeptWorkload();
+        List<DeptWorkloadEntry>     deptPerfHistory  = analyticsService.getDeptPerfHistory();
 
-        // List data — always empty lists so JS never receives null
-        model.addAttribute("atRiskTickets",  Collections.emptyList());
-        model.addAttribute("slaMetrics",     Collections.emptyList());
-        model.addAttribute("leaderboard",    Collections.emptyList());
-        model.addAttribute("deptWorkload",   Collections.emptyList());
-        model.addAttribute("dailyVolume",    Collections.emptyList());
+        model.addAttribute("slaMetrics",       slaMetrics);
+        model.addAttribute("dailyVolume",      dailyVolume);
+        model.addAttribute("leaderboard",      leaderboard);
+        model.addAttribute("agentPerfHistory", agentPerfHistory);
+        model.addAttribute("deptWorkload",     deptWorkload);
+        model.addAttribute("deptPerfHistory",  deptPerfHistory);
+        model.addAttribute("lastEtlRun",       analyticsService.getLastEtlRunTime());
 
-        // ETL timestamp — null means "not run yet" (handled in template)
-        model.addAttribute("lastEtlRun", null);
+        // ── KPI headline numbers — derived from slaMetrics ───────────────────
+        int    totalTickets       = slaMetrics.stream().mapToInt(SlaMetricEntry::getTotalTickets).sum();
+        int    totalBreached      = slaMetrics.stream().mapToInt(SlaMetricEntry::getBreachedTickets).sum();
+        double weightedCompliance = totalTickets > 0
+            ? slaMetrics.stream()
+                  .mapToDouble(m -> m.getComplianceRatePct() * m.getTotalTickets())
+                  .sum() / totalTickets
+            : 0.0;
+
+        model.addAttribute("totalTickets",      totalTickets);
+        model.addAttribute("totalBreached",     totalBreached);
+        model.addAttribute("overallCompliance", Math.round(weightedCompliance * 10.0) / 10.0);
+
+        // ── Live breach data — queried directly from service_requests ─────────
+        // These values change in real time and are intentionally NOT sourced from
+        // the analytics tables (which are only refreshed on the ETL schedule).
+        OffsetDateTime now      = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime twoHours = now.plusHours(2);
+
+        long                 activeBreaches = serviceRequestRepository.countActiveBreaches(DONE_STATUSES);
+        List<ServiceRequest> atRiskTickets  = serviceRequestRepository.findAtRiskTickets(DONE_STATUSES, now, twoHours);
+
+        model.addAttribute("activeBreaches", activeBreaches);
+        model.addAttribute("atRiskTickets",  atRiskTickets);
 
         return "dashboard/admin";
     }
 }
+

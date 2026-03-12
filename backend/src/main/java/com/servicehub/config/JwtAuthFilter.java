@@ -1,5 +1,6 @@
 package com.servicehub.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servicehub.repository.TokenBlacklistRepository;
 import com.servicehub.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -16,11 +17,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -35,10 +40,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // Reject blacklisted (logged-out) tokens immediately
                 if (tokenBlacklistRepository.existsByToken(token)) {
-                    SecurityContextHolder.clearContext();
-                    filterChain.doFilter(request, response);
+                    rejectWithJson(request, response, "Token has been revoked. Please log in again.");
                     return;
                 }
 
@@ -50,13 +53,44 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             userDetails, null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    // Token present but invalid (expired, bad signature, etc.)
+                    SecurityContextHolder.clearContext();
+                    if (isApiRequest(request)) {
+                        rejectWithJson(request, response, "Token is invalid or has expired. Please log in again.");
+                        return;
+                    }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 SecurityContextHolder.clearContext();
+                if (isApiRequest(request)) {
+                    rejectWithJson(request, response, "Token is invalid or has expired. Please log in again.");
+                    return;
+                }
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isApiRequest(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/api/");
+    }
+
+    private void rejectWithJson(HttpServletRequest request,
+                                HttpServletResponse response,
+                                String message) throws IOException {
+        SecurityContextHolder.clearContext();
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(MAPPER.writeValueAsString(Map.of(
+            "status", 401,
+            "error", "Unauthorized",
+            "message", message,
+            "path", request.getRequestURI(),
+            "timestamp", LocalDateTime.now().toString()
+        )));
     }
 
     private String extractToken(HttpServletRequest request) {

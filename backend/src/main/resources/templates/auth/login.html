@@ -69,9 +69,9 @@
 
                 <div>
                     <label for="username" class="block text-sm font-medium text-foreground mb-1.5">Email address</label>
-                    <input type="email" id="username" name="username" autocomplete="email" required
+                    <input type="email" id="username" name="username" autocomplete="email" autofocus required
                            placeholder="you@company.com"
-                           class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground placeholder:text-muted-foreground-2 focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+                           class="py-2.5 sm:py-3 px-4 rounded-lg block w-full bg-layer border-layer-line sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none" />
                 </div>
 
                 <div>
@@ -81,13 +81,7 @@
                     </div>
                     <input type="password" id="password" name="password" autocomplete="current-password" required
                            placeholder="••••••••"
-                           class="py-2.5 px-3 block w-full bg-background border border-card-line rounded-lg text-sm text-foreground placeholder:text-muted-foreground-2 focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="remember" name="remember-me"
-                           class="shrink-0 size-4 rounded border-card-line text-primary focus:ring-primary/30" />
-                    <label for="remember" class="text-sm text-muted-foreground-1">Remember me</label>
+                           class="py-2.5 sm:py-3 px-4 rounded-lg block w-full bg-layer border-layer-line sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none" />
                 </div>
 
                 <button type="submit"
@@ -134,4 +128,3 @@
 </body>
 
 </html>
-

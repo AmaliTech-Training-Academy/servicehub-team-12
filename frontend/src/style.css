@@ -12,5 +12,23 @@
 /* Plugins */
 @plugin "@tailwindcss/forms";
 
+/* ApexCharts */
+@import "../node_modules/apexcharts/dist/apexcharts.css";
+
 /* Preline Themes */
 @import "../node_modules/preline/css/themes/theme.css";
+
+/* CSS for hiding some default datatable elements */
+.dt-layout-row:has(.dt-search),
+.dt-layout-row:has(.dt-length),
+.dt-layout-row:has(.dt-paging) {
+  display: none !important;
+}
+
+.action-alert-border {
+  border-color: var(--primary-200) !important;
+}
+
+.dark .action-alert-border {
+  border-color: var(--primary-900) !important;
+}
