@@ -11,7 +11,7 @@ public class SlaScheduler {
 
     private final SlaServiceImpl slaBreachService;
 
-    @Scheduled(fixedRate = 60 * 60 * 1000)
+    @Scheduled(fixedRate = 1000)
     public void checkSlaBreaches() {
         slaBreachService.detectAndUpdateBreachStatus();
     }

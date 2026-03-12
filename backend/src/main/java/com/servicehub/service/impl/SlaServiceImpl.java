@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import com.servicehub.service.Notification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class SlaServiceImpl implements SlaService {
     private final SlaPolicyRepository slaPolicyRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final WorkingHoursCalculator workingHoursCalculator;
+    private final Notification emailService;
 
     @EventListener
     public void handleServiceRequestCreated(ServiceRequestCreatedEvent event) {
@@ -90,6 +92,8 @@ public class SlaServiceImpl implements SlaService {
                 if (request.getIsSlaBreached() == null || !request.getIsSlaBreached()) {
                     request.setIsSlaBreached(isBreached);
                     serviceRequestRepository.save(request);
+                    emailService.sendSlaBreachNotification(request.getRequester().getEmail(), request);
+                    emailService.sendSlaBreachNotification(request.getAssignedTo().getEmail(), request);
 
                     log.warn("SLA BREACH: Request {} ({}|{}) exceeded deadline: {}",
                             request.getId(),
