@@ -174,8 +174,21 @@
               </td>
               <td class="p-3 whitespace-nowrap text-sm font-medium text-foreground" th:text="${t.title}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.category}"></td>
-              <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.priority}"></td>
-              <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.status}"></td>
+              <td class="p-3 whitespace-nowrap text-sm text-foreground">
+                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+                      th:classappend="${t.priority.name() == 'CRITICAL'} ? 'bg-red-100 text-red-800' :
+                                       (${t.priority.name() == 'HIGH'}   ? 'bg-orange-100 text-orange-800' :
+                                       (${t.priority.name() == 'MEDIUM'} ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'))"
+                      th:text="${t.priority}"></span>
+              </td>
+              <td class="p-3 whitespace-nowrap text-sm text-foreground">
+                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+                      th:classappend="${t.status.name() == 'OPEN'}          ? 'bg-slate-100 text-slate-700' :
+                                       (${t.status.name() == 'ASSIGNED'}    ? 'bg-sky-100 text-sky-800' :
+                                       (${t.status.name() == 'IN_PROGRESS'} ? 'bg-amber-100 text-amber-800' :
+                                       (${t.status.name() == 'RESOLVED'}    ? 'bg-green-100 text-green-800' : 'bg-zinc-200 text-zinc-800')))"
+                      th:text="${t.status}"></span>
+              </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.assignedAgentName} ?: '—'"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></td>
               <td class="p-3 whitespace-nowrap text-end text-sm font-medium">

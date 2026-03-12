@@ -9,91 +9,107 @@
       <p class="text-sm text-muted-foreground-1">Tickets currently assigned to you.</p>
     </div>
 
-    <!-- Filter bar -->
-    <div class="bg-card border border-card-line rounded-xl shadow-2xs mb-4">
-      <form th:action="@{/requests/assigned}" method="get" class="flex flex-wrap gap-3 p-4 items-end">
-        <div class="flex-1 min-w-48">
-          <label class="block text-xs font-medium text-muted-foreground-2 mb-1">Search</label>
-          <input type="text" name="q" th:value="${param.q}"
-                 placeholder="Search by title..."
-                 class="py-2 px-3 block w-full bg-background border border-card-line rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-muted-foreground-2 mb-1">Priority</label>
-          <select name="priority"
-                  class="py-2 px-3 block bg-background border border-card-line rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/30 focus:border-primary transition">
-            <option value="">All</option>
-            <option value="CRITICAL" th:selected="${param.priority == 'CRITICAL'}">Critical</option>
-            <option value="HIGH"     th:selected="${param.priority == 'HIGH'}">High</option>
-            <option value="MEDIUM"   th:selected="${param.priority == 'MEDIUM'}">Medium</option>
-            <option value="LOW"      th:selected="${param.priority == 'LOW'}">Low</option>
-          </select>
-        </div>
-        <button type="submit"
-                class="py-2 px-4 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover transition">
-          Filter
-        </button>
-      </form>
-    </div>
-
-    <div class="bg-card border border-card-line rounded-xl shadow-2xs">
-
-      <!-- Empty state -->
-      <div th:if="${assignedTickets == null or #lists.isEmpty(assignedTickets)}"
-           class="flex flex-col items-center justify-center py-16 text-center">
+    <div th:if="${assignedTickets == null or #lists.isEmpty(assignedTickets)}"
+         class="bg-white border border-card-line rounded-xl shadow-sm p-4 sm:p-5">
+      <div class="flex flex-col items-center justify-center py-16 text-center">
         <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
         </svg>
         <p class="text-sm text-muted-foreground-1">No tickets assigned to you.</p>
       </div>
+    </div>
 
-      <!-- Table -->
-      <div th:if="${assignedTickets != null and not #lists.isEmpty(assignedTickets)}" class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-card-line">
-          <thead class="bg-muted-hover">
+    <div th:if="${assignedTickets != null and not #lists.isEmpty(assignedTickets)}"
+         id="hs-agent-assigned-table"
+         class="bg-white border border-card-line rounded-xl shadow-sm p-4 sm:p-5 flex flex-col --prevent-on-load-init"
+         data-request-table
+         data-priority-column-index="3"
+         data-status-column-index="5"
+         data-hs-datatable='{
+           "pageLength": 10,
+           "pagingOptions": {
+             "pageBtnClasses": "min-w-10 flex justify-center items-center text-foreground hover:bg-muted-hover focus:outline-hidden focus:bg-muted-focus py-2.5 text-sm rounded-full disabled:opacity-50 disabled:pointer-events-none"
+           },
+           "language": {
+             "zeroRecords": "<div class=&quot;p-5 h-full flex flex-col justify-center items-center text-center&quot;><div class=&quot;max-w-sm mx-auto&quot;><p class=&quot;mt-2 text-sm text-muted-foreground&quot;>No matching assigned tickets</p></div></div>"
+           }
+         }'>
+      <div class="flex flex-wrap items-center gap-2 mb-4">
+        <div class="grow">
+          <div class="relative max-w-xs w-full">
+            <label for="hs-assigned-table-filter-search" class="sr-only">Search</label>
+            <input type="text" name="hs-assigned-table-filter-search" id="hs-assigned-table-filter-search"
+                   class="py-1.5 sm:py-2 px-3 ps-9 block w-full bg-layer border-layer-line shadow-2xs rounded-lg sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:z-10 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none"
+                   placeholder="Search assigned tickets"
+                   data-hs-datatable-search>
+            <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none ps-3">
+              <svg class="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="min-h-130 overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-track]:bg-scrollbar-track [&::-webkit-scrollbar-thumb]:bg-scrollbar-thumb">
+        <table class="min-w-full">
+          <thead class="border-y border-table-line">
             <tr>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Title</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Requester</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Category</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Priority</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">SLA Deadline</th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Status</th>
-              <th class="px-5 py-3"></th>
+              <th scope="col" class="py-1 text-start font-normal">
+                <div class="py-1 px-5 inline-flex items-center text-sm text-muted-foreground-1">Title</div>
+              </th>
+              <th scope="col" class="py-1 text-start font-normal">
+                <div class="py-1 px-3 inline-flex items-center text-sm text-muted-foreground-1">Requester</div>
+              </th>
+              <th scope="col" class="py-1 text-start font-normal">
+                <div class="py-1 px-3 inline-flex items-center text-sm text-muted-foreground-1">Category</div>
+              </th>
+              <th scope="col" class="py-1 text-start font-normal">
+                <div class="py-1 px-3 inline-flex items-center text-sm text-muted-foreground-1">Priority</div>
+              </th>
+              <th scope="col" class="py-1 text-start font-normal">
+                <div class="py-1 px-3 inline-flex items-center text-sm text-muted-foreground-1">SLA Deadline</div>
+              </th>
+              <th scope="col" class="py-1 text-start font-normal">
+                <div class="py-1 px-3 inline-flex items-center text-sm text-muted-foreground-1">Status</div>
+              </th>
+              <th scope="col" class="py-2 px-5 text-end font-normal text-sm text-muted-foreground-1">Action</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-card-line">
+          <tbody class="divide-y divide-table-line">
             <tr th:each="t : ${assignedTickets}" class="hover:bg-muted-hover transition-colors">
-              <td class="px-5 py-3.5 text-sm font-medium text-foreground" th:text="${t.title}"></td>
-              <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${t.requesterName}"></td>
-              <td class="px-5 py-3.5 text-sm text-muted-foreground-1" th:text="${t.category}"></td>
-              <td class="px-5 py-3.5">
-                <span class="inline-flex items-center py-0.5 px-2 rounded text-xs font-bold uppercase tracking-wide"
-                      th:classappend="${t.priority == 'CRITICAL'} ? 'bg-red-100 text-red-700'   :
-                                       (${t.priority == 'HIGH'}   ? 'bg-amber-100 text-amber-700' :
-                                       (${t.priority == 'MEDIUM'} ? 'bg-blue-100 text-blue-700'   : 'bg-surface-1 text-muted-foreground-2'))"
+              <td class="p-3 ps-5 whitespace-nowrap text-sm font-medium text-foreground" th:text="${t.title}"></td>
+              <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.requesterName}"></td>
+              <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.category}"></td>
+              <td class="p-3 whitespace-nowrap text-sm text-foreground">
+                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+                      th:classappend="${t.priority.name() == 'CRITICAL'} ? 'bg-red-100 text-red-800' :
+                                       (${t.priority.name() == 'HIGH'}   ? 'bg-orange-100 text-orange-800' :
+                                       (${t.priority.name() == 'MEDIUM'} ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'))"
                       th:text="${t.priority}"></span>
               </td>
-              <td class="px-5 py-3.5 text-sm"
-                  th:classappend="${t.slaBreached} ? 'text-red-600 font-semibold' : 'text-muted-foreground-1'"
+              <td class="p-3 whitespace-nowrap text-sm text-foreground"
                   th:text="${t.slaDeadline != null} ? ${#temporals.format(t.slaDeadline, 'dd MMM HH:mm')} : '—'"></td>
-              <td class="px-5 py-3.5">
+              <td class="p-3 whitespace-nowrap text-sm text-foreground">
                 <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.status == 'ASSIGNED'}    ? 'bg-blue-50 text-blue-700'    :
-                                       (${t.status == 'IN_PROGRESS'}? 'bg-amber-50 text-amber-700'  : 'bg-surface-1 text-muted-foreground-2')"
+                      th:classappend="${t.status.name() == 'OPEN'}          ? 'bg-slate-100 text-slate-700' :
+                                       (${t.status.name() == 'ASSIGNED'}    ? 'bg-sky-100 text-sky-800' :
+                                       (${t.status.name() == 'IN_PROGRESS'} ? 'bg-amber-100 text-amber-800' :
+                                       (${t.status.name() == 'RESOLVED'}    ? 'bg-green-100 text-green-800' : 'bg-zinc-200 text-zinc-800')))"
                       th:text="${t.status}"></span>
               </td>
-              <td class="px-5 py-3.5 text-right">
-                <a th:href="@{/requests/{id}(id=${t.id})}"
-                   class="text-xs font-medium text-primary hover:underline">View</a>
+              <td class="p-3 pe-5 whitespace-nowrap text-end text-sm font-medium">
+                <form th:action="@{/requests/assigned/{id}/transition(id=${t.id})}" method="post" class="inline">
+                  <button type="submit"
+                          class="inline-flex items-center gap-x-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition">
+                    Transition
+                  </button>
+                </form>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-
     </div>
 
   </div>
 </body>
 </html>
-

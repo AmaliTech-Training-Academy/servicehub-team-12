@@ -3,7 +3,6 @@ package com.amalitech.qa.utils;
 import com.amalitech.qa.testdata.AuthTestData;
 import com.amalitech.qa.testdata.ServiceRequestTestData;
 import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.*;
 
@@ -27,7 +26,7 @@ public class TestHelper {
     /**
      * Logs in as admin and returns the user ID dynamically.
      * Extracted directly from the login response — no hardcoding needed.
-     * Requires @eugeneanokye99 to add id field to AuthResponse.
+     * id field was added to AuthResponse by @eugeneanokye99.
      */
     public static String getRequesterId() {
         return given()

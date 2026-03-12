@@ -4,6 +4,7 @@ import com.servicehub.dto.ServiceRequestForm;
 import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.User;
 import com.servicehub.service.ServiceRequestService;
+import com.servicehub.service.WorkflowService;
 import java.util.Collections;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class RequestController {
 
     private final ServiceRequestService serviceRequestService;
     private final ServiceRequestMapper serviceRequestMapper;
+    private final WorkflowService workflowService;
 
     // ── USER: My Requests ────────────────────────────────────────
 
@@ -111,7 +113,9 @@ public class RequestController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String priority) {
         model.addAttribute("userRole", principal != null ? principal.getRole().name() : "AGENT");
-        model.addAttribute("assignedTickets", Collections.emptyList());
+        model.addAttribute("assignedTickets", principal == null
+                ? Collections.emptyList()
+                : serviceRequestService.findAllByAssignedToId(principal.getId()));
         return "requests/assigned";
     }
 
@@ -130,6 +134,19 @@ public class RequestController {
     public String pickUpTicket(@PathVariable Long id,
             RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("success", "Ticket picked up successfully.");
+        return "redirect:/requests/assigned";
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'AGENT')")
+    @PostMapping("/assigned/{id}/transition")
+    public String transitionAssignedTicket(@PathVariable UUID id,
+            RedirectAttributes redirectAttributes) {
+        try {
+            workflowService.transitionStatus(id);
+            redirectAttributes.addFlashAttribute("success", "Ticket status transitioned successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Could not transition ticket status: " + e.getMessage());
+        }
         return "redirect:/requests/assigned";
     }
 }

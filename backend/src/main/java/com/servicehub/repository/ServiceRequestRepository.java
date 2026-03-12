@@ -24,6 +24,8 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
 
     List<ServiceRequest> findAllByRequester(User requester);
 
+    List<ServiceRequest> findAllByAssignedTo(User assignedTo);
+
     Optional<ServiceRequest> findByIdAndRequester(UUID id, User requester);
 
     /**
