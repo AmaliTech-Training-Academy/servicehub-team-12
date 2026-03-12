@@ -37,6 +37,21 @@ output "cloudwatch_logs_endpoint_id" {
   value       = aws_vpc_endpoint.cloudwatch_logs.id
 }
 
+output "ssm_endpoint_id" {
+  description = "The ID of the SSM Interface VPC Endpoint."
+  value       = aws_vpc_endpoint.ssm.id
+}
+
+output "ssmmessages_endpoint_id" {
+  description = "The ID of the SSM Messages Interface VPC Endpoint."
+  value       = aws_vpc_endpoint.ssmmessages.id
+}
+
+output "ec2messages_endpoint_id" {
+  description = "The ID of the EC2 Messages Interface VPC Endpoint."
+  value       = aws_vpc_endpoint.ec2messages.id
+}
+
 output "vpc_endpoints_security_group_id" {
   description = "The ID of the security group attached to VPC interface endpoints."
   value       = aws_security_group.vpc_endpoints.id
