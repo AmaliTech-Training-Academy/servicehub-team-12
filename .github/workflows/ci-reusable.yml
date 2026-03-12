@@ -271,16 +271,24 @@ jobs:
                     exit 1
                   fi
 
-                  DB_PASSWORD=$(aws secretsmanager get-secret-value \
+                  SECRET_JSON=$(aws secretsmanager get-secret-value \
                     --secret-id "$SECRET_ID" \
                     --query 'SecretString' \
-                    --output text | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
+                    --output text)
 
-                  echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-                  echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-                  echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-                  echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-                  echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+                  DB_HOST=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["host"])' <<< "$SECRET_JSON")
+                  DB_PORT=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["port"])' <<< "$SECRET_JSON")
+                  DB_NAME=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["dbname"])' <<< "$SECRET_JSON")
+                  DB_USER=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])' <<< "$SECRET_JSON")
+                  DB_PASSWORD=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])' <<< "$SECRET_JSON")
+
+                  {
+                    echo "DB_HOST=$DB_HOST"
+                    echo "DB_PORT=$DB_PORT"
+                    echo "DB_NAME=$DB_NAME"
+                    echo "DB_USER=$DB_USER"
+                    echo "DB_PASSWORD=$DB_PASSWORD"
+                  } > .env
 
             - name: Archive data-engineering directory
               run: tar -czf data-engineering.tar.gz data-engineering/
