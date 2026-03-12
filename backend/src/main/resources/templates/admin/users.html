@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{components/layout :: page(~{::content})}">
-<head><title>Users</title></head>
+<head><title>User Management</title></head>
 <body>
   <div th:fragment="content">
 
     <div class="mb-6">
-      <h2 class="text-2xl font-semibold text-foreground">All Users</h2>
-      <p class="text-sm text-muted-foreground-1">Manage all registered users in the system.</p>
+      <h2 class="text-2xl font-semibold text-foreground">User Management</h2>
+      <p class="text-sm text-muted-foreground-1">Manage accounts and permissions</p>
     </div>
 
     <!-- Success / error banners -->
@@ -19,7 +19,6 @@
       <span th:text="${error}"></span>
     </div>
 
-    <!-- Search -->
     <div class="bg-card border border-card-line rounded-xl shadow-2xs mb-4">
       <form th:action="@{/admin/users}" method="get" class="flex gap-3 p-4 items-end">
         <div class="flex-1">
@@ -28,7 +27,6 @@
                  class="py-2.5 sm:py-3 px-4 rounded-lg block w-full bg-layer border border-layer-line sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none" />
         </div>
         <div>
-          <label for="user-role-filter" class="block text-xs font-medium text-muted-foreground-2 mb-1">Role</label>
           <select id="user-role-filter" name="role" class="min-w-36 py-2.5 sm:py-3 px-4 pe-10 block bg-layer border border-layer-line rounded-lg sm:text-sm text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
             <option value="">All roles</option>
             <option value="USER"  th:selected="${param.role == 'USER'}">User</option>
@@ -40,7 +38,13 @@
       </form>
     </div>
 
-    <div class="bg-card border border-card-line rounded-xl shadow-2xs">
+    <div class="bg-card border border-card-line rounded-xl shadow-2xs overflow-hidden">
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 py-4 border-b border-card-line bg-muted-hover/40">
+        <div>
+          <h3 class="text-sm font-semibold text-foreground">Accounts</h3>
+        </div>
+      </div>
 
       <div th:if="${users == null or #lists.isEmpty(users)}"
            class="flex flex-col items-center justify-center py-16 text-center">
@@ -61,7 +65,7 @@
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Role</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Status</th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Joined</th>
-              <th class="px-5 py-3"></th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Access Control</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-card-line">
@@ -69,7 +73,7 @@
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
                   <!-- Avatar: first letter of firstName + first letter of lastName (if present) -->
-                  <div class="shrink-0 flex items-center justify-center size-8 rounded-full bg-primary text-primary-foreground text-xs font-bold select-none"
+                  <div class="shrink-0 flex items-center justify-center size-8 rounded-full bg-black text-white text-xs font-bold select-none"
                        th:text="${#strings.toUpperCase(
                                     #strings.substring(u.firstName, 0, 1)
                                     + (#strings.isEmpty(u.lastName) ? '' : #strings.substring(u.lastName, 0, 1))
@@ -93,22 +97,21 @@
                       th:classappend="${u.active} ? 'bg-green-50 text-green-700' : 'bg-surface-1 text-muted-foreground-2'"
                       th:text="${u.active} ? 'Active' : 'Inactive'"></span>
               </td>
-              <td class="px-5 py-3.5 text-sm text-muted-foreground-1"
+              <td class="px-5 py-3.5 text-sm text-muted-foreground-1 whitespace-nowrap"
                   th:text="${#temporals.format(u.createdAt, 'dd MMM yyyy')}"></td>
-              <td class="px-5 py-3.5 text-right">
-                <div class="flex items-center justify-end gap-3">
-                  <!-- Toggle active/inactive -->
-                  <form th:action="@{/admin/users/{id}/toggle(id=${u.id})}" method="post">
-                    <button type="submit"
-                            th:text="${u.active} ? 'Deactivate' : 'Activate'"
-                            class="text-xs font-medium text-amber-600 hover:underline"></button>
-                  </form>
-                  <!-- Delete -->
-                  <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post"
-                        onsubmit="return confirm('Permanently delete this user?')">
-                    <button type="submit" class="text-xs font-medium text-red-600 hover:underline">Delete</button>
-                  </form>
-                </div>
+              <td class="px-5 py-3.5">
+                <form th:action="@{/admin/roles/{id}(id=${u.id})}" method="post" class="flex flex-col sm:flex-row sm:items-center gap-2 min-w-48">
+                  <select name="role"
+                          class="py-2 px-3 pe-9 block w-full sm:min-w-32 bg-layer border border-layer-line rounded-lg text-sm text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
+                    <option value="USER" th:selected="${u.role == 'USER'}">User</option>
+                    <option value="AGENT" th:selected="${u.role == 'AGENT'}">Agent</option>
+                    <option value="ADMIN" th:selected="${u.role == 'ADMIN'}">Admin</option>
+                  </select>
+                  <button type="submit"
+                          class="py-2 px-3 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover focus:outline-hidden focus:bg-primary-focus transition whitespace-nowrap">
+                    Update Role
+                  </button>
+                </form>
               </td>
             </tr>
           </tbody>

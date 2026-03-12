@@ -115,9 +115,6 @@ public class UserServiceImpl implements UserService {
                 .active(user.isActive())
                 .provider(user.getProvider())
                 .createdAt(user.getCreatedAt())
-                // Workload stats: default to 0 until ETL pipeline wires live data
-                .openTicketCount(0)
-                .slaComplianceRatePct(0)
                 .build();
     }
 }

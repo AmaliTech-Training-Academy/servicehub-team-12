@@ -4,7 +4,6 @@ import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.UserService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -17,17 +16,30 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
-@RequiredArgsConstructor
 public class AdminController {
 
-    private final UserService userService;
-    private final ServiceRequestService serviceRequestService;
+    private UserService userService;
+    private ServiceRequestService serviceRequestService;
+
+    public AdminController(UserService userService, ServiceRequestService serviceRequestService) {
+        this.userService = userService;
+        this.serviceRequestService = serviceRequestService;
+    }
 
     private void addCommonAttributes(Model model, User principal) {
         model.addAttribute("userRole", "ADMIN");
         if (principal != null) {
-            model.addAttribute("currentUserName", principal.getFullName());
-            model.addAttribute("currentUserEmail", principal.getEmail());
+            model.addAttribute("currentUserName", extractPrincipalName(principal));
+            model.addAttribute("currentUserEmail", principal.getUsername());
+        }
+    }
+
+    private String extractPrincipalName(User principal) {
+        try {
+            Object value = principal.getClass().getMethod("getFullName").invoke(principal);
+            return value == null ? principal.getUsername() : value.toString();
+        } catch (ReflectiveOperationException ignored) {
+            return principal.getUsername();
         }
     }
 
@@ -104,9 +116,9 @@ public class AdminController {
     public String agents(Model model,
                          @AuthenticationPrincipal User principal,
                          @RequestParam(required = false) String q) {
-        addCommonAttributes(model, principal);
-        model.addAttribute("agents", userService.findAll(q, Role.AGENT));
-        return "admin/agents";
+        return q != null && !q.isBlank()
+                ? "redirect:/admin/users?role=AGENT&q=" + q
+                : "redirect:/admin/users?role=AGENT";
     }
 
     @PostMapping("/agents/{id}/toggle")
@@ -118,16 +130,14 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Could not update agent: " + e.getMessage());
         }
-        return "redirect:/admin/agents";
+        return "redirect:/admin/users?role=AGENT";
     }
 
     // ── Roles & Permissions ──────────────────────────────────────
 
     @GetMapping("/roles")
     public String roles(Model model, @AuthenticationPrincipal User principal) {
-        addCommonAttributes(model, principal);
-        model.addAttribute("users", userService.findAll(null, null));
-        return "admin/roles";
+        return "redirect:/admin/users";
     }
 
     @PostMapping("/roles/{id}")
@@ -143,7 +153,7 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Could not update role: " + e.getMessage());
         }
-        return "redirect:/admin/roles";
+        return "redirect:/admin/users";
     }
 
     // ── Settings ─────────────────────────────────────────────────
