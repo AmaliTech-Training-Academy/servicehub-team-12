@@ -1,5 +1,5 @@
 """
-Airflow DAG to orchestrate the nightly ServiceHub SLA analytics pipeline.
+Airflow DAG to orchestrate the minute-level ServiceHub SLA analytics pipeline.
 
 Each logical ETL step is represented as a separate task to make failures and
 debugging more transparent.
@@ -21,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from etl import (  # noqa: E402
+    extract_daily_volume_aggregates,
     extract_requests,
     extract_sla_policies,
     load_analytics,
@@ -42,7 +43,7 @@ logger = get_logger(__name__)
 default_args = {
     "owner": "data-engineering",
     "depends_on_past": False,
-    "retries": 1,
+    "retries": 3,
     "retry_delay": timedelta(minutes=5),
 }
 
@@ -174,20 +175,15 @@ def _compute_and_load_sla_metrics(**context: object) -> None:
 
 def _compute_and_load_daily_volume(**context: object) -> None:
     """
-    Compute daily request volumes from validated data and load them into the analytics table.
-    """
-    ti = context["ti"]
-    valid_requests_path = ti.xcom_pull(
-        task_ids="validate_and_quarantine", key="valid_requests_path"
-    )
-    requests_df = (
-        pd.read_parquet(valid_requests_path)
-        if valid_requests_path and Path(valid_requests_path).exists()
-        else pd.DataFrame()
-    )
+    Compute daily request volumes and load them into the analytics table.
 
+    For this metric we push the heavy aggregation work down to PostgreSQL
+    via `extract_daily_volume_aggregates` to avoid reprocessing the full
+    request history in pandas on each hourly run.
+    """
     engine = get_engine()
-    daily_volume = transform_daily_volume(requests_df)
+    aggregated = extract_daily_volume_aggregates(engine)
+    daily_volume = transform_daily_volume(aggregated)
     load_analytics(daily_volume, "analytics_daily_volume", engine)
 
 
@@ -235,9 +231,9 @@ def _compute_and_load_department_workload(**context: object) -> None:
 
 with DAG(
     dag_id="servicehub_sla_analytics",
-    description="Nightly ETL for ServiceHub SLA, request volume, agent, and department analytics.",
+    description="Hourly ETL for ServiceHub SLA, request volume, agent, and department analytics.",
     default_args=default_args,
-    schedule="0 * * * *",  # hourly
+    schedule="*/1 * * * *",  # every minute
     start_date=datetime(2026, 3, 10),
     catchup=False,
     max_active_runs=1,
