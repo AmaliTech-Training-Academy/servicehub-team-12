@@ -21,6 +21,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.servicehub.exception.SlaPolicyNotFoundException;
 import com.servicehub.model.ServiceRequest;
@@ -29,10 +31,12 @@ import com.servicehub.model.enums.RequestPriority;
 import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.SlaPolicyRepository;
+import com.servicehub.service.WorkingHoursCalculator;
 
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SlaServiceImplTest {
 
     @Mock
@@ -40,6 +44,9 @@ class SlaServiceImplTest {
 
     @Mock
     private ServiceRequestRepository serviceRequestRepository;
+
+    @Mock
+    private WorkingHoursCalculator workingHoursCalculator;
 
     @InjectMocks
     private SlaServiceImpl slaService;
@@ -65,6 +72,11 @@ class SlaServiceImplTest {
         testRequest.setStatus(RequestStatus.OPEN);
         testRequest.setCreatedAt(OffsetDateTime.now());
         testRequest.setIsSlaBreached(false);
+
+        // WorkingHoursCalculator stubs: effective start = createdAt, deadline delegated to mock
+        when(workingHoursCalculator.getNextWorkingHoursStart(any())).thenAnswer(i -> i.getArgument(0));
+        when(workingHoursCalculator.addBusinessHours(any(), anyLong()))
+                .thenAnswer(i -> ((OffsetDateTime) i.getArgument(0)).plusHours(i.getArgument(1)));
     }
 
     @Test
@@ -74,13 +86,12 @@ class SlaServiceImplTest {
                 RequestCategory.IT_SUPPORT, RequestPriority.CRITICAL))
                 .thenReturn(Optional.of(testPolicy));
 
-        OffsetDateTime expectedDeadline = testRequest.getCreatedAt().plusHours(4);
-
         OffsetDateTime actualDeadline = slaService.calculateAndSetSlaDeadline(testRequest);
 
         assertNotNull(actualDeadline);
-        assertEquals(expectedDeadline, actualDeadline);
-        assertEquals(expectedDeadline, testRequest.getSlaDeadline());
+        assertEquals(actualDeadline, testRequest.getSlaDeadline());
+        verify(workingHoursCalculator).getNextWorkingHoursStart(testRequest.getCreatedAt());
+        verify(workingHoursCalculator).addBusinessHours(testRequest.getCreatedAt(), 4L);
     }
 
     @Test
@@ -108,11 +119,10 @@ class SlaServiceImplTest {
                 RequestCategory.FACILITIES, RequestPriority.HIGH))
                 .thenReturn(Optional.of(facilitiesPolicy));
 
-        OffsetDateTime expectedDeadline = testRequest.getCreatedAt().plusHours(16);
-
         OffsetDateTime actualDeadline = slaService.calculateAndSetSlaDeadline(testRequest);
 
-        assertEquals(expectedDeadline, actualDeadline);
+        assertNotNull(actualDeadline);
+        verify(workingHoursCalculator).addBusinessHours(testRequest.getCreatedAt(), 16L);
     }
 
     @Test
@@ -130,11 +140,10 @@ class SlaServiceImplTest {
                 RequestCategory.HR_REQUEST, RequestPriority.LOW))
                 .thenReturn(Optional.of(hrPolicy));
 
-        OffsetDateTime expectedDeadline = testRequest.getCreatedAt().plusHours(168);
-
         OffsetDateTime actualDeadline = slaService.calculateAndSetSlaDeadline(testRequest);
 
-        assertEquals(expectedDeadline, actualDeadline);
+        assertNotNull(actualDeadline);
+        verify(workingHoursCalculator).addBusinessHours(testRequest.getCreatedAt(), 168L);
     }
 
     @Test

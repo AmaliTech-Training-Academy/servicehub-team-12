@@ -14,6 +14,7 @@ import com.servicehub.model.SlaPolicy;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.SlaPolicyRepository;
 import com.servicehub.service.SlaService;
+import com.servicehub.service.WorkingHoursCalculator;
 import lombok.RequiredArgsConstructor;
 
 @Slf4j
@@ -23,6 +24,7 @@ public class SlaServiceImpl implements SlaService {
 
     private final SlaPolicyRepository slaPolicyRepository;
     private final ServiceRequestRepository serviceRequestRepository;
+    private final WorkingHoursCalculator workingHoursCalculator;
 
     @Override
     @Transactional
@@ -37,8 +39,11 @@ public class SlaServiceImpl implements SlaService {
                                 request.getCategory(), request.getPriority())
                 ));
 
-        OffsetDateTime deadline = request.getCreatedAt()
-                .plusHours(policy.getResolutionTimeHours());
+        OffsetDateTime effectiveStart =
+                workingHoursCalculator.getNextWorkingHoursStart(request.getCreatedAt());
+
+        OffsetDateTime deadline =
+                workingHoursCalculator.addBusinessHours(effectiveStart, policy.getResolutionTimeHours());
 
         request.setSlaDeadline(deadline);
 
