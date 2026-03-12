@@ -281,6 +281,8 @@ jobs:
                   DB_NAME=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["dbname"])' <<< "$SECRET_JSON")
                   DB_USER=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])' <<< "$SECRET_JSON")
                   DB_PASSWORD=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])' <<< "$SECRET_JSON")
+                  DB_USER_URI=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$DB_USER")
+                  DB_PASSWORD_URI=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$DB_PASSWORD")
 
                   AIRFLOW_DB="${{ secrets.AIRFLOW_DB }}"
                   AIRFLOW_WEB_PORT="${{ secrets.AIRFLOW_WEB_PORT }}"
@@ -302,6 +304,8 @@ jobs:
                     echo "DB_NAME=$DB_NAME"
                     echo "DB_USER=$DB_USER"
                     echo "DB_PASSWORD=$DB_PASSWORD"
+                    echo "DB_USER_URI=$DB_USER_URI"
+                    echo "DB_PASSWORD_URI=$DB_PASSWORD_URI"
                     echo "AIRFLOW_DB=$AIRFLOW_DB"
                     echo "AIRFLOW_WEB_PORT=$AIRFLOW_WEB_PORT"
                     echo "AIRFLOW_UID=$AIRFLOW_UID"
