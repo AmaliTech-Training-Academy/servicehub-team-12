@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
@@ -109,6 +110,14 @@ public class GlobalAuthExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ignored) {
         return buildResponse(HttpStatus.FORBIDDEN, "Forbidden",
                 "You do not have permission to access this resource.", null);
+    }
+
+    @ExceptionHandler(InvalidTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransition(
+            InvalidTransitionException ex, WebRequest request) {
+
+        return buildResponse(HttpStatus.BAD_REQUEST, "Bad Request",
+                ex.getMessage(), null);
     }
 
     @ExceptionHandler(Exception.class)
