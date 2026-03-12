@@ -263,22 +263,24 @@ jobs:
             - name: Generate .env file
               working-directory: data-engineering
               run: |
-                SECRET_ID="${{ secrets.RDS_CREDENTIALS_SECRET_ID }}"
-                if [ -z "$SECRET_ID" ]; then
-                  echo "RDS_CREDENTIALS_SECRET_ID is required"
-                  exit 1
-                fi
+                  set -euo pipefail
 
-                DB_PASSWORD=$(aws secretsmanager get-secret-value \
-                  --secret-id "$SECRET_ID" \
-                  --query 'SecretString' \
-                  --output text | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
+                  SECRET_ID="${{ secrets.RDS_CREDENTIALS_SECRET_ID }}"
+                  if [ -z "$SECRET_ID" ]; then
+                    echo "RDS_CREDENTIALS_SECRET_ID is required"
+                    exit 1
+                  fi
+
+                  DB_PASSWORD=$(aws secretsmanager get-secret-value \
+                    --secret-id "$SECRET_ID" \
+                    --query 'SecretString' \
+                    --output text | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
 
                   echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
                   echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
                   echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
                   echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-                echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+                  echo "DB_PASSWORD=$DB_PASSWORD" >> .env
 
             - name: Archive data-engineering directory
               run: tar -czf data-engineering.tar.gz data-engineering/
@@ -289,6 +291,8 @@ jobs:
 
             - name: Trigger SSM Deployment
               run: |
+                  set -euo pipefail
+
                   COMMAND_ID=$(aws ssm send-command \
                     --targets "Key=tag:Role,Values=AirflowDockerHost" \
                     --document-name "AWS-RunShellScript" \
@@ -297,16 +301,36 @@ jobs:
                     --query "Command.CommandId" \
                     --output text)
 
-                  INSTANCE_ID=$(aws ssm list-command-invocations \
-                    --command-id "$COMMAND_ID" \
-                    --details \
-                    --query 'CommandInvocations[0].InstanceId' \
-                    --output text)
-
                   echo "Waiting for SSM command $COMMAND_ID to complete..."
-                  # Add a brief sleep to ensure SSM registers the command before polling status
-                  sleep 2
-                  aws ssm wait command-executed \
-                    --command-id "$COMMAND_ID" \
-                    --instance-id "$INSTANCE_ID" \
-                    --region ${{ secrets.AWS_REGION }}
+
+                  INSTANCE_IDS=""
+                  for _ in {1..15}; do
+                    INSTANCE_IDS=$(aws ssm list-command-invocations \
+                      --command-id "$COMMAND_ID" \
+                      --details \
+                      --query 'CommandInvocations[].InstanceId' \
+                      --output text)
+
+                    if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
+                      break
+                    fi
+
+                    sleep 2
+                  done
+
+                  if [ -z "$INSTANCE_IDS" ] || [ "$INSTANCE_IDS" = "None" ]; then
+                    echo "No SSM command invocations found for command $COMMAND_ID."
+                    echo "Verify at least one managed instance is online and tagged Role=AirflowDockerHost."
+                    aws ssm describe-instance-information \
+                      --query 'InstanceInformationList[].{InstanceId:InstanceId,PingStatus:PingStatus,LastPingDateTime:LastPingDateTime}' \
+                      --output table || true
+                    exit 1
+                  fi
+
+                  for INSTANCE_ID in $INSTANCE_IDS; do
+                    echo "Waiting for command $COMMAND_ID on instance $INSTANCE_ID"
+                    aws ssm wait command-executed \
+                      --command-id "$COMMAND_ID" \
+                      --instance-id "$INSTANCE_ID" \
+                      --region ${{ secrets.AWS_REGION }}
+                  done
