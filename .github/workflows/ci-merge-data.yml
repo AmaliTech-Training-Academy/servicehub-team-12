@@ -1,0 +1,28 @@
+name: Merge CI (Data Engineering)
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - data-engineering/**
+            - .github/workflows/**
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    data:
+        name: Data Engineering merge checks + deploy
+        uses: ./.github/workflows/ci-reusable.yml
+        with:
+            run_checkstyle: false
+            run_tests: false
+            build_image: false
+            push_image: false
+            run_data_tests: true
+            run_checkov: false
+            run_trivy: false
+            run_sbom: false
+            deploy_dags: true
+        secrets: inherit

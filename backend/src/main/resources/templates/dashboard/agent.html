@@ -14,54 +14,60 @@
       <p class="text-sm text-muted-foreground-1">Your performance this week.</p>
     </div>
 
-    <!-- KPI Cards (shown when ETL data exists) -->
-    <div th:if="${not #lists.isEmpty(currentWeek)}" th:each="week : ${currentWeek}">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- KPI Cards — always rendered; scalar values are 0 when ETL has not run yet,
+         mirroring how admin.html derives totalTickets / overallCompliance from slaMetrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 
-        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
-          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Assigned This Week</p>
-          <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="${week.ticketsAssigned}">—</p>
-          <p class="text-xs text-muted-foreground-2 mt-1">Tickets in your queue</p>
-        </div>
-
-        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
-          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-green-500"></div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved This Week</p>
-          <p class="text-3xl font-bold text-green-600 leading-none mt-1" th:text="${week.ticketsResolved}">—</p>
-          <p class="text-xs text-muted-foreground-2 mt-1">Closed by you</p>
-        </div>
-
-        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden"
-             th:classappend="${week.slaComplianceRatePct >= 90} ? '' : (${week.slaComplianceRatePct >= 70} ? '' : '')">
-          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-               th:classappend="${week.slaComplianceRatePct >= 90} ? 'bg-green-500' : (${week.slaComplianceRatePct >= 70} ? 'bg-amber-500' : 'bg-red-500')">
-          </div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">My SLA Compliance</p>
-          <p class="text-3xl font-bold leading-none mt-1"
-             th:classappend="${week.slaComplianceRatePct >= 90} ? 'text-green-600' : (${week.slaComplianceRatePct >= 70} ? 'text-amber-600' : 'text-red-600')"
-             th:text="|${week.slaComplianceRatePct}%|">—</p>
-          <p class="text-xs text-muted-foreground-2 mt-1">Target: 90%</p>
-        </div>
-
-        <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
-          <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Avg Resolution Time</p>
-          <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="|${week.avgResolutionHours}h|">—</p>
-          <p class="text-xs text-muted-foreground-2 mt-1">Mean hours to resolve</p>
-        </div>
-
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Assigned This Week</p>
+        <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="${weekAssigned}">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Tickets in your queue</p>
       </div>
+
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-green-500"></div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved This Week</p>
+        <p class="text-3xl font-bold text-green-600 leading-none mt-1" th:text="${weekResolved}">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Closed by you</p>
+      </div>
+
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+             th:classappend="${weekCompliance >= 90} ? 'bg-green-500' : (${weekCompliance >= 70} ? 'bg-amber-500' : 'bg-red-500')">
+        </div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">My SLA Compliance</p>
+        <p class="text-3xl font-bold leading-none mt-1"
+           th:classappend="${weekCompliance >= 90} ? 'text-green-600' : (${weekCompliance >= 70} ? 'text-amber-600' : 'text-red-600')"
+           th:text="|${weekCompliance}%|">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Target: 90%</p>
+      </div>
+
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+             th:classappend="${activeBreaches > 0} ? 'bg-red-500' : 'bg-green-500'">
+        </div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">
+          Active Breaches <span class="text-blue-500 lowercase normal-case font-medium">(live)</span>
+        </p>
+        <p class="text-3xl font-bold leading-none mt-1"
+           th:classappend="${activeBreaches > 0} ? 'text-red-600' : 'text-green-600'"
+           th:text="${activeBreaches}">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Open &amp; breached right now</p>
+      </div>
+
     </div>
 
-    <!-- No-data state -->
-    <div th:if="${#lists.isEmpty(currentWeek)}"
-         class="bg-card border border-card-line rounded-xl p-8 shadow-2xs mb-6 flex flex-col items-center justify-center text-center">
-      <svg class="size-10 text-muted-foreground-2 opacity-30 mb-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- ETL not-yet-run note (shown below the KPI cards, not instead of them) -->
+    <div th:if="${!etlDataAvailable}"
+         class="bg-card border border-card-line rounded-xl p-4 shadow-2xs mb-6 flex items-center gap-3">
+      <svg class="size-5 text-muted-foreground-2 opacity-50 shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
-      <p class="text-sm text-muted-foreground-1">Your stats for this week aren't available yet.</p>
-      <p class="text-xs text-muted-foreground-2 mt-1">The ETL pipeline runs at midnight UTC — check back tomorrow.</p>
+      <p class="text-xs text-muted-foreground-1">
+        Weekly stats (assigned, resolved, SLA %) aren't available yet —
+        the ETL pipeline runs at midnight UTC and will populate them overnight.
+      </p>
     </div>
 
     <!-- At-risk tickets panel -->
@@ -139,33 +145,40 @@
     const weekTrend = /*[[${weekTrend}]]*/ [];
 
     window.addEventListener('load', function () {
-      Chart.defaults.font.family = "'Inter', sans-serif";
+      // Chart is exposed on window by the Vite module bundle (deferred).
+      // Wrapping in 'load' guarantees window.Chart is set before we use it.
+      (function buildCharts() {
+        if (typeof Chart === 'undefined') return;
 
-      (function buildComplianceTrend() {
-        const el = document.getElementById('complianceTrend');
-        if (!el || !weekTrend.length) return;
-        new Chart(el, {
-          type: 'line',
-          data: {
-            labels: weekTrend.map(w => 'Wk ' + w.weekStart),
-            datasets: [{ label: 'SLA Compliance %', data: weekTrend.map(w => parseFloat(w.slaComplianceRatePct) || 0), borderColor: '#2563eb', backgroundColor: '#2563eb1a', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#2563eb' }],
-          },
-          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } },
-        });
-      })();
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size   = 12;
 
-      (function buildResolvedTrend() {
-        const el = document.getElementById('resolvedTrend');
-        if (!el || !weekTrend.length) return;
-        new Chart(el, {
-          type: 'bar',
-          data: {
-            labels: weekTrend.map(w => 'Wk ' + w.weekStart),
-            datasets: [{ label: 'Tickets Resolved', data: weekTrend.map(w => w.ticketsResolved || 0), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }],
-          },
-          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
-        });
-      })();
+        (function buildComplianceTrend() {
+          const el = document.getElementById('complianceTrend');
+          if (!el || !weekTrend.length) return;
+          new Chart(el, {
+            type: 'line',
+            data: {
+              labels: weekTrend.map(w => 'Wk ' + w.weekStart),
+              datasets: [{ label: 'SLA Compliance %', data: weekTrend.map(w => parseFloat(w.slaComplianceRatePct) || 0), borderColor: '#2563eb', backgroundColor: '#2563eb1a', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#2563eb' }],
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } } },
+          });
+        })();
+
+        (function buildResolvedTrend() {
+          const el = document.getElementById('resolvedTrend');
+          if (!el || !weekTrend.length) return;
+          new Chart(el, {
+            type: 'bar',
+            data: {
+              labels: weekTrend.map(w => 'Wk ' + w.weekStart),
+              datasets: [{ label: 'Tickets Resolved', data: weekTrend.map(w => w.ticketsResolved || 0), backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }],
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } },
+          });
+        })();
+      })(); // end buildCharts
     }); // end load
   </script>
 </body>
