@@ -39,24 +39,24 @@ resource "aws_iam_role_policy_attachment" "ec2_ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# S3 read access for DAG sync sidecar
-resource "aws_iam_policy" "ec2_s3_dags" {
-  name        = "${local.name_prefix}-ec2-s3-dags-policy"
-  description = "Allow EC2 to read DAGs from S3"
+# S3 read access for pulling deployment artifacts
+resource "aws_iam_policy" "ec2_s3_data_engineering" {
+  name        = "${local.name_prefix}-ec2-s3-data-engineering-policy"
+  description = "Allow EC2 to read data engineering deployment artifacts from S3"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3DAGsReadAccess"
+        Sid    = "S3DataEngineeringReadAccess"
         Effect = "Allow"
         Action = [
           "s3:GetObject",
           "s3:ListBucket"
         ]
         Resource = [
-          var.s3_dags_bucket_arn,
-          "${var.s3_dags_bucket_arn}/*"
+          var.s3_data_engineering_bucket_arn,
+          "${var.s3_data_engineering_bucket_arn}/*"
         ]
       }
     ]
@@ -67,9 +67,9 @@ resource "aws_iam_policy" "ec2_s3_dags" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ec2_s3_dags" {
+resource "aws_iam_role_policy_attachment" "ec2_s3_data_engineering" {
   role       = aws_iam_role.ec2_airflow.name
-  policy_arn = aws_iam_policy.ec2_s3_dags.arn
+  policy_arn = aws_iam_policy.ec2_s3_data_engineering.arn
 }
 
 # CloudWatch Logs access

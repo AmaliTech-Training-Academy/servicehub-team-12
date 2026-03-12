@@ -58,14 +58,14 @@ resource "aws_instance" "airflow" {
 
   # ── User Data: Bootstrap Docker + Airflow ──
   user_data = base64encode(templatefile("${path.module}/templates/user_data.sh.tpl", {
-    s3_dags_bucket = var.s3_dags_bucket
-    db_host        = var.db_host
-    db_name        = var.db_name
-    db_username    = var.db_username
-    secret_arn     = var.secret_arn
-    aws_region     = data.aws_region.current.name
-    environment    = var.environment
-    project_name   = var.project_name
+    s3_data_engineering_bucket = var.s3_data_engineering_bucket
+    db_host                    = var.db_host
+    db_name                    = var.db_name
+    db_username                = var.db_username
+    secret_arn                 = var.secret_arn
+    aws_region                 = data.aws_region.current.name
+    environment                = var.environment
+    project_name               = var.project_name
   }))
 
   tags = merge(var.tags, {

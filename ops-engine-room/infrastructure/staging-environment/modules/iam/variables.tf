@@ -12,8 +12,8 @@ variable "environment" {
   type        = string
 }
 
-variable "s3_dags_bucket_arn" {
-  description = "ARN of the S3 bucket storing Airflow DAGs."
+variable "s3_data_engineering_bucket_arn" {
+  description = "ARN of the S3 bucket storing data engineering deployment artifacts."
   type        = string
 }
 

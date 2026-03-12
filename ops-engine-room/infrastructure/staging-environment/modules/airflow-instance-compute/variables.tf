@@ -42,8 +42,8 @@ variable "ssh_public_key" {
   type        = string
 }
 
-variable "s3_dags_bucket" {
-  description = "The name of the S3 bucket containing Airflow DAGs."
+variable "s3_data_engineering_bucket" {
+  description = "The name of the S3 bucket containing data engineering deployment artifacts."
   type        = string
 }
 
