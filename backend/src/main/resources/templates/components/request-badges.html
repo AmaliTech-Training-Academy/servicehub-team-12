@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+  <th:block th:fragment="priorityBadge(value)"
+            th:with="label=${value != null ? value.toString() : 'UNKNOWN'}">
+    <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+          th:classappend="${label == 'CRITICAL'} ? 'bg-red-100 text-red-800' :
+                           (${label == 'HIGH'} ? 'bg-orange-100 text-orange-800' :
+                           (${label == 'MEDIUM'} ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'))"
+          th:text="${#strings.replace(label, '_', ' ')}">Priority</span>
+  </th:block>
+
+  <th:block th:fragment="statusBadge(value)"
+            th:with="label=${value != null ? value.toString() : 'UNKNOWN'}">
+    <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+          th:classappend="${label == 'OPEN'} ? 'bg-slate-100 text-slate-700' :
+                           (${label == 'ASSIGNED'} ? 'bg-sky-100 text-sky-800' :
+                           (${label == 'IN_PROGRESS'} ? 'bg-amber-100 text-amber-800' :
+                           (${label == 'RESOLVED'} ? 'bg-green-100 text-green-800' :
+                           (${label == 'CLOSED'} ? 'bg-zinc-200 text-zinc-800' : 'bg-slate-100 text-slate-700'))))"
+          th:text="${#strings.replace(label, '_', ' ')}">Status</span>
+  </th:block>
+</body>
+</html>
