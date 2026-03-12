@@ -138,15 +138,20 @@ resource "aws_iam_policy" "github_ssm_deploy" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "SSMSendCommandRunShellDocument"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript"
+      },
+      {
         Sid    = "SSMSendCommandToTaggedAirflowHost"
         Effect = "Allow"
         Action = [
           "ssm:SendCommand"
         ]
-        Resource = [
-          "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript",
-          "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*"
-        ]
+        Resource = "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*"
         Condition = {
           StringEquals = {
             "ssm:resourceTag/Role" = "AirflowDockerHost"
