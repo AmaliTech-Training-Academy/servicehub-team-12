@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body style="font-family: Arial, sans-serif;">
+
+<h2 style="color:#d9534f;">SLA Breach Notification</h2>
+
+<p>Hello,</p>
+
+<p>
+    The following service request has
+    <b>breached its SLA deadline</b>.
+</p>
+
+<table border="1" cellpadding="8" cellspacing="0">
+    <tr>
+        <td><b>Title</b></td>
+        <td th:text="${title}"></td>
+    </tr>
+    <tr>
+        <td><b>Status</b></td>
+        <td th:text="${status}"></td>
+    </tr>
+    <tr>
+        <td><b>Priority</b></td>
+        <td th:text="${priority}"></td>
+    </tr>
+    <tr>
+        <td><b>SLA Deadline</b></td>
+        <td th:text="${slaDeadline}"></td>
+    </tr>
+</table>
+
+<p>Please take action as soon as possible.</p>
+
+<p>
+    Regards,<br/>
+    <b>ServiceHub System</b>
+</p>
+
+</body>
+</html>

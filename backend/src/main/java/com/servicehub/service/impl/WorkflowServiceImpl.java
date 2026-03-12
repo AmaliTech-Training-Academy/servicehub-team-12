@@ -4,11 +4,14 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 
+import com.servicehub.event.StatusTransitionEvent;
 import com.servicehub.exception.InvalidTransitionException;
 import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.repository.ServiceRequestRepository;
-import com.servicehub.service.ServiceRequestService;
+import com.servicehub.service.Notification;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class WorkflowServiceImpl implements WorkflowService {
 
+    private final ApplicationEventPublisher publisher;
+
     private static final Map<RequestStatus, RequestStatus> NEXT_STATUS = Map.of(
             RequestStatus.OPEN, RequestStatus.ASSIGNED,
             RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS,
@@ -33,7 +38,16 @@ public class WorkflowServiceImpl implements WorkflowService {
     );
 
     private final ServiceRequestRepository serviceRequestRepository;
-    private final ServiceRequestService serviceRequestService;
+    private final Notification emailService;
+
+    @EventListener
+    void handleStatusTransitionEvent(StatusTransitionEvent event) {
+        emailService.sendStatusUpdate(
+                event.request().getRequester().getEmail(),
+                event.request().getTitle(),
+                event.request().getStatus()
+        );
+    }
 
     @Override
     @Transactional
@@ -44,8 +58,8 @@ public class WorkflowServiceImpl implements WorkflowService {
         );
 
         RequestStatus currentStatus = serviceRequest.getStatus();
-        System.out.println("current " + currentStatus);
         RequestStatus nextStatus = NEXT_STATUS.get(currentStatus);
+
 
         if (nextStatus == null) {
             throw new InvalidTransitionException("Invalid transition from " + currentStatus);
@@ -53,11 +67,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
         serviceRequest.setStatus(nextStatus);
 
-        if (nextStatus == RequestStatus.ASSIGNED) {
-            serviceRequestService.autoAssign(requestId);
-        }
-
         updateTimestamps(serviceRequest, nextStatus);
+
+        publisher.publishEvent(new StatusTransitionEvent(serviceRequest));
 
         serviceRequest.setUpdatedAt(OffsetDateTime.now());
 
