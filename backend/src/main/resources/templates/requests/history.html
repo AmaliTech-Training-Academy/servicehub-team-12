@@ -52,9 +52,9 @@
                   </span>
                 </p>
               </div>
-              <span class="shrink-0 inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                    th:classappend="${t.status == 'RESOLVED'} ? 'bg-green-50 text-green-700' : 'bg-surface-1 text-muted-foreground-2'"
-                    th:text="${t.status}"></span>
+              <span class="shrink-0">
+                <th:block th:replace="~{components/request-badges :: statusBadge(${t.status})}"></th:block>
+              </span>
             </div>
           </div>
 
@@ -68,4 +68,3 @@
   </div>
 </body>
 </html>
-

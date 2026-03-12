@@ -80,21 +80,12 @@
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.requesterName}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.category}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.priority.name() == 'CRITICAL'} ? 'bg-red-100 text-red-800' :
-                                       (${t.priority.name() == 'HIGH'}   ? 'bg-orange-100 text-orange-800' :
-                                       (${t.priority.name() == 'MEDIUM'} ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'))"
-                      th:text="${t.priority}"></span>
+                <th:block th:replace="~{components/request-badges :: priorityBadge(${t.priority})}"></th:block>
               </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground"
                   th:text="${t.slaDeadline != null} ? ${#temporals.format(t.slaDeadline, 'dd MMM HH:mm')} : '—'"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.status.name() == 'OPEN'}          ? 'bg-slate-100 text-slate-700' :
-                                       (${t.status.name() == 'ASSIGNED'}    ? 'bg-sky-100 text-sky-800' :
-                                       (${t.status.name() == 'IN_PROGRESS'} ? 'bg-amber-100 text-amber-800' :
-                                       (${t.status.name() == 'RESOLVED'}    ? 'bg-green-100 text-green-800' : 'bg-zinc-200 text-zinc-800')))"
-                      th:text="${t.status}"></span>
+                <th:block th:replace="~{components/request-badges :: statusBadge(${t.status})}"></th:block>
               </td>
               <td class="p-3 pe-5 whitespace-nowrap text-end text-sm font-medium">
                 <form th:action="@{/requests/assigned/{id}/transition(id=${t.id})}" method="post" class="inline">

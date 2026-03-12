@@ -2,11 +2,11 @@ package com.servicehub.config;
 
 import com.servicehub.model.Department;
 import com.servicehub.model.User;
-import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.Role;
 import com.servicehub.model.enums.UserDepartment;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.UserRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +22,19 @@ public class DataSeeder implements CommandLineRunner {
     private static final String ADMIN_EMAIL    = "admin@amalitech.com";
     private static final String ADMIN_PASSWORD = "password123";
     private static final String ADMIN_NAME     = "System Administrator";
+    private static final String AGENT_PASSWORD = "password123";
+    private static final List<AgentSeed> AGENT_SEEDS = List.of(
+            new AgentSeed("ama.boateng@amalitech.com", "Ama Boateng", UserDepartment.IT),
+            new AgentSeed("kwame.asare@amalitech.com", "Kwame Asare", UserDepartment.IT),
+            new AgentSeed("efua.owusu@amalitech.com", "Efua Owusu", UserDepartment.IT),
+            new AgentSeed("kojo.mensah@amalitech.com", "Kojo Mensah", UserDepartment.IT),
+            new AgentSeed("abena.agyeman@amalitech.com", "Abena Agyeman", UserDepartment.HR),
+            new AgentSeed("yaw.antwi@amalitech.com", "Yaw Antwi", UserDepartment.HR),
+            new AgentSeed("akosua.darko@amalitech.com", "Akosua Darko", UserDepartment.HR),
+            new AgentSeed("nana.quaye@amalitech.com", "Nana Quaye", UserDepartment.FACILITIES),
+            new AgentSeed("adwoa.sarpong@amalitech.com", "Adwoa Sarpong", UserDepartment.FACILITIES),
+            new AgentSeed("kofi.bonsu@amalitech.com", "Kofi Bonsu", UserDepartment.FACILITIES)
+    );
 
     private final DepartmentRepository departmentRepository;
     private final UserRepository  userRepository;
@@ -32,6 +45,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         seedDepartments();
         seedAdmin();
+        seedAgents();
     }
 
     private void seedDepartments() {
@@ -70,5 +84,37 @@ public class DataSeeder implements CommandLineRunner {
 
         userRepository.save(admin);
         log.info("Admin user created: {}", ADMIN_EMAIL);
+    }
+
+    private void seedAgents() {
+        AGENT_SEEDS.forEach(this::seedAgent);
+    }
+
+    private void seedAgent(AgentSeed agentSeed) {
+        if (userRepository.existsByEmail(agentSeed.email())) {
+            log.info("Agent user already exists — skipping seed for {}.", agentSeed.email());
+            return;
+        }
+
+        Department department = departmentRepository.findByNameIgnoreCase(agentSeed.department().getDisplayName())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Department not found for agent seed: " + agentSeed.department().getDisplayName()));
+
+        User agent = User.builder()
+                .email(agentSeed.email())
+                .fullName(agentSeed.fullName())
+                .password(passwordEncoder.encode(AGENT_PASSWORD))
+                .role(Role.AGENT)
+                .department(agentSeed.department().getDisplayName())
+                .departmentEntity(department)
+                .provider("local")
+                .isActive(true)
+                .build();
+
+        userRepository.save(agent);
+        log.info("Agent user created: {}", agentSeed.email());
+    }
+
+    private record AgentSeed(String email, String fullName, UserDepartment department) {
     }
 }

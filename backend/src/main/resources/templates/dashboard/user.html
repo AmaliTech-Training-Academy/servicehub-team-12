@@ -17,41 +17,25 @@
     <!-- Status Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
-      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs flex items-center gap-4">
-        <div class="shrink-0 flex items-center justify-center size-11 rounded-xl bg-amber-50 text-amber-600">
-          <svg class="size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Open Requests</p>
-          <p class="text-3xl font-bold text-foreground leading-none mt-0.5" th:text="${myOpenCount}">0</p>
-        </div>
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-amber-500"></div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Open Requests</p>
+        <p class="text-3xl font-bold text-amber-600 leading-none mt-1" th:text="${myOpenCount}">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Currently active</p>
       </div>
 
-      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs flex items-center gap-4">
-        <div class="shrink-0 flex items-center justify-center size-11 rounded-xl bg-green-50 text-green-600">
-          <svg class="size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved</p>
-          <p class="text-3xl font-bold text-foreground leading-none mt-0.5" th:text="${myResolvedCount}">0</p>
-        </div>
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-green-500"></div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Resolved</p>
+        <p class="text-3xl font-bold text-green-600 leading-none mt-1" th:text="${myResolvedCount}">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">Completed requests</p>
       </div>
 
-      <div class="bg-card border border-card-line rounded-xl p-5 shadow-2xs flex items-center gap-4">
-        <div class="shrink-0 flex items-center justify-center size-11 rounded-xl bg-blue-50 text-blue-600">
-          <svg class="size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
-            <path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Total Submitted</p>
-          <p class="text-3xl font-bold text-foreground leading-none mt-0.5" th:text="${myTotalCount}">0</p>
-        </div>
+      <div class="relative bg-card border border-card-line rounded-xl p-5 shadow-2xs overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-blue-500"></div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground-2">Total Submitted</p>
+        <p class="text-3xl font-bold text-blue-600 leading-none mt-1" th:text="${myTotalCount}">—</p>
+        <p class="text-xs text-muted-foreground-2 mt-1">All time</p>
       </div>
 
     </div>
@@ -138,9 +122,6 @@
                   Submitted
                 </div>
               </th>
-              <th scope="col" class="py-2 px-5 text-end font-normal text-sm text-muted-foreground-1">
-                Action
-              </th>
             </tr>
           </thead>
 
@@ -149,27 +130,12 @@
               <td class="p-3 ps-5 whitespace-nowrap text-sm font-medium text-foreground" th:text="${t.title}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${t.category}"></td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.priority == 'CRITICAL'} ? 'bg-red-100 text-red-700' :
-                                       (${t.priority == 'HIGH'}   ? 'bg-amber-100 text-amber-700' :
-                                       (${t.priority == 'MEDIUM'} ? 'bg-blue-100 text-blue-700' : 'bg-surface-1 text-muted-foreground-2'))"
-                      th:text="${t.priority}"></span>
+                <th:block th:replace="~{components/request-badges :: priorityBadge(${t.priority})}"></th:block>
               </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground">
-                <span class="inline-flex items-center py-0.5 px-2.5 rounded-full text-xs font-semibold uppercase tracking-wide"
-                      th:classappend="${t.status == 'OPEN'}          ? 'bg-blue-50 text-blue-700' :
-                                       (${t.status == 'ASSIGNED'}    ? 'bg-green-50 text-green-700' :
-                                       (${t.status == 'IN_PROGRESS'} ? 'bg-amber-50 text-amber-700' :
-                                       (${t.status == 'RESOLVED'}    ? 'bg-green-50 text-green-700' : 'bg-surface-1 text-muted-foreground-2')))"
-                      th:text="${t.status}"></span>
+                <th:block th:replace="~{components/request-badges :: statusBadge(${t.status})}"></th:block>
               </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></td>
-              <td class="p-3 pe-5 whitespace-nowrap text-end text-sm font-medium">
-                <a th:href="@{/requests/{id}(id=${t.id})}"
-                   class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg text-primary hover:text-primary-hover focus:outline-hidden focus:text-primary-focus disabled:opacity-50 disabled:pointer-events-none">
-                  View
-                </a>
-              </td>
             </tr>
           </tbody>
         </table>
