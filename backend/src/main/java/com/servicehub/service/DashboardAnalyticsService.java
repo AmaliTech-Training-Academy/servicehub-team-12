@@ -6,6 +6,7 @@ import com.servicehub.dto.DeptWorkloadEntry;
 import com.servicehub.dto.SlaMetricEntry;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Contract for the admin dashboard analytics service.
@@ -43,6 +44,26 @@ public interface DashboardAnalyticsService {
      * Used for the Weekly Performance Trend area chart on the Agents tab.
      */
     List<AgentLeaderboardEntry> getAgentPerfHistory();
+
+    /**
+     * Current-week performance row for a single agent identified by their
+     * {@code agent_id} UUID. Returns a one-element list, or an empty list when
+     * the ETL has not run yet or the agent has no row.
+     *
+     * @param agentId UUID of the authenticated agent (matches {@code agent_id}
+     *                column in {@code analytics_agent_performance})
+     */
+    List<AgentLeaderboardEntry> getCurrentWeekForAgent(UUID agentId);
+
+    /**
+     * Last {@code weeks} weeks of performance history for a single agent,
+     * ordered oldest-to-newest. Used for the trend charts on the agent
+     * dashboard.
+     *
+     * @param agentId UUID of the authenticated agent
+     * @param weeks   number of distinct {@code week_start} values to include
+     */
+    List<AgentLeaderboardEntry> getAgentWeekTrend(UUID agentId, int weeks);
 
     /**
      * Current-week department workload rows.

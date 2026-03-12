@@ -8,6 +8,7 @@ import com.servicehub.repository.AnalyticsDashboardRepository;
 import com.servicehub.service.DashboardAnalyticsService;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +52,18 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
 
     /** {@inheritDoc} */
     @Override
+    public List<AgentLeaderboardEntry> getCurrentWeekForAgent(UUID agentId) {
+        return analyticsRepository.findCurrentWeekForAgent(agentId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<AgentLeaderboardEntry> getAgentWeekTrend(UUID agentId, int weeks) {
+        return analyticsRepository.findAgentWeekTrend(agentId, weeks);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public List<DeptWorkloadEntry> getDeptWorkload() {
         return analyticsRepository.findCurrentWeekDeptWorkload();
     }
@@ -67,4 +80,3 @@ public class DashboardAnalyticsServiceImpl implements DashboardAnalyticsService 
         return analyticsRepository.findLastEtlRunTime();
     }
 }
-
