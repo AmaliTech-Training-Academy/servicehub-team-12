@@ -37,13 +37,13 @@
     </div>
 
     <div class="max-w-2xl mx-auto">
-      <div class="bg-white border border-card-line rounded-xl shadow-sm p-6">
+      <div class="bg-white border border-card-line rounded-xl p-6">
         <form th:action="@{/requests/new}" method="post" class="space-y-5">
 
           <div>
             <label for="title" class="block text-sm font-medium text-foreground mb-1.5">Title <span
                 class="text-red-500">*</span></label>
-            <input type="text" id="title" name="title" required placeholder="Brief description of the issue"
+            <input type="text" id="title" name="title" required autofocus placeholder="Brief description of the issue"
               th:value="${formData?.title}"
               class="py-2.5 sm:py-3 px-4 rounded-lg block w-full bg-layer border-layer-line sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none" />
           </div>
