@@ -35,4 +35,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             ORDER BY u.createdAt DESC
             """)
     List<User> search(@Param("query") String query, @Param("role") Role role);
+
+    Optional<User> findFirstByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(Role role, String department);
 }

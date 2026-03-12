@@ -147,10 +147,12 @@
               </td>
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></td>
               <td class="p-3 pe-5 whitespace-nowrap text-end text-sm font-medium">
-                <a th:href="@{/requests/{id}(id=${t.id})}"
-                   class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg text-primary hover:text-primary-hover focus:outline-hidden focus:text-primary-focus disabled:opacity-50 disabled:pointer-events-none">
-                  View
-                </a>
+                <form th:action="@{/admin/requests/{id}/transition(id=${t.id})}" method="post" class="inline">
+                  <button type="submit"
+                          class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg text-primary hover:text-primary-hover focus:outline-hidden focus:text-primary-focus disabled:opacity-50 disabled:pointer-events-none">
+                    Transition status
+                  </button>
+                </form>
               </td>
             </tr>
           </tbody>

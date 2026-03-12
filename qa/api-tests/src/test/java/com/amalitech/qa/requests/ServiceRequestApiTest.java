@@ -173,7 +173,7 @@ public class ServiceRequestApiTest extends BaseTest {
                 .statusCode(400);
     }
 
-    // Testing to confirm create fails with invalid category
+    //     Testing to confirm create fails with invalid category
     @Test
     public void testCreateServiceRequestInvalidCategory() {
         given()
@@ -207,4 +207,5 @@ public class ServiceRequestApiTest extends BaseTest {
                 .then()
                 .statusCode(404);
     }
+
 }
