@@ -31,6 +31,10 @@ on:
                 type: boolean
                 required: false
                 default: false
+            run_sbom:
+                type: boolean
+                required: false
+                default: false
             deploy_dags:
                 type: boolean
                 required: false
@@ -81,6 +85,22 @@ jobs:
                   format: 'table'
                   exit-code: '1'
                   severity: 'CRITICAL,HIGH'
+
+    sbom:
+        permissions:
+            contents: read
+        name: Generate SBOM
+        runs-on: ubuntu-latest
+        if: inputs.run_sbom
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Generate SBOM
+              uses: anchore/sbom-action@v0
+              with:
+                  format: 'spdx-json'
+                  artifact-name: 'sbom.spdx.json'
 
     checkov:
         permissions:
