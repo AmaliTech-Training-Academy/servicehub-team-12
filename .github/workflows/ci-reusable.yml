@@ -282,12 +282,32 @@ jobs:
                   DB_USER=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])' <<< "$SECRET_JSON")
                   DB_PASSWORD=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])' <<< "$SECRET_JSON")
 
+                  AIRFLOW_DB="${{ secrets.AIRFLOW_DB }}"
+                  AIRFLOW_WEB_PORT="${{ secrets.AIRFLOW_WEB_PORT }}"
+                  AIRFLOW_UID="${{ secrets.AIRFLOW_UID }}"
+                  AIRFLOW_ADMIN_USER="${{ secrets.AIRFLOW_ADMIN_USER }}"
+                  AIRFLOW_ADMIN_PASSWORD="${{ secrets.AIRFLOW_ADMIN_PASSWORD }}"
+                  LOG_LEVEL="${{ secrets.LOG_LEVEL }}"
+
+                  [ -n "$AIRFLOW_DB" ] || AIRFLOW_DB="airflow"
+                  [ -n "$AIRFLOW_WEB_PORT" ] || AIRFLOW_WEB_PORT="8080"
+                  [ -n "$AIRFLOW_UID" ] || AIRFLOW_UID="50000"
+                  [ -n "$AIRFLOW_ADMIN_USER" ] || AIRFLOW_ADMIN_USER="airflow"
+                  [ -n "$AIRFLOW_ADMIN_PASSWORD" ] || AIRFLOW_ADMIN_PASSWORD="airflow_pass"
+                  [ -n "$LOG_LEVEL" ] || LOG_LEVEL="INFO"
+
                   {
                     echo "DB_HOST=$DB_HOST"
                     echo "DB_PORT=$DB_PORT"
                     echo "DB_NAME=$DB_NAME"
                     echo "DB_USER=$DB_USER"
                     echo "DB_PASSWORD=$DB_PASSWORD"
+                    echo "AIRFLOW_DB=$AIRFLOW_DB"
+                    echo "AIRFLOW_WEB_PORT=$AIRFLOW_WEB_PORT"
+                    echo "AIRFLOW_UID=$AIRFLOW_UID"
+                    echo "AIRFLOW_ADMIN_USER=$AIRFLOW_ADMIN_USER"
+                    echo "AIRFLOW_ADMIN_PASSWORD=$AIRFLOW_ADMIN_PASSWORD"
+                    echo "LOG_LEVEL=$LOG_LEVEL"
                   } > .env
 
             - name: Archive data-engineering directory
