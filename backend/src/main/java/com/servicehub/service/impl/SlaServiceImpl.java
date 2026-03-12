@@ -2,14 +2,13 @@ package com.servicehub.service.impl;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.UUID;
+import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.servicehub.exception.SlaPolicyNotFoundException;
-import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.SlaPolicy;
 import com.servicehub.repository.ServiceRequestRepository;
@@ -29,17 +28,17 @@ public class SlaServiceImpl implements SlaService {
     @Transactional
     public OffsetDateTime calculateAndSetSlaDeadline(ServiceRequest request) {
         log.info("Calculating SLA deadline for request {} with category {} and priority {}",
-            request.getId(), request.getCategory(), request.getPriority());
+                request.getId(), request.getCategory(), request.getPriority());
 
         SlaPolicy policy = slaPolicyRepository
-            .findByCategoryAndPriority(request.getCategory(), request.getPriority())
-            .orElseThrow(() -> new SlaPolicyNotFoundException(
-                String.format("No SLA policy found for category %s and priority %s",
-                    request.getCategory(), request.getPriority())
-            ));
+                .findByCategoryAndPriority(request.getCategory(), request.getPriority())
+                .orElseThrow(() -> new SlaPolicyNotFoundException(
+                        String.format("No SLA policy found for category %s and priority %s",
+                                request.getCategory(), request.getPriority())
+                ));
 
         OffsetDateTime deadline = request.getCreatedAt()
-            .plusHours(policy.getResolutionTimeHours());
+                .plusHours(policy.getResolutionTimeHours());
 
         request.setSlaDeadline(deadline);
 
@@ -59,7 +58,7 @@ public class SlaServiceImpl implements SlaService {
 
         if (isBreached) {
             log.warn("Request {} has breached SLA. Deadline: {}, Current time: {}",
-                request.getId(), request.getSlaDeadline(), now);
+                    request.getId(), request.getSlaDeadline(), now);
         }
 
         return isBreached;
@@ -67,19 +66,30 @@ public class SlaServiceImpl implements SlaService {
 
     @Override
     @Transactional
-    public ServiceRequest detectAndUpdateBreachStatus(UUID requestId) {
-        ServiceRequest request = serviceRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Service request not found: " + requestId));
+    public void detectAndUpdateBreachStatus() {
 
-        boolean isBreached = checkSlaBreached(request);
+        List<ServiceRequest> requests = serviceRequestRepository
+                .findRequestsPastDeadline(OffsetDateTime.now());
 
-        if (request.getIsSlaBreached() == null || request.getIsSlaBreached() != isBreached) {
-            request.setIsSlaBreached(isBreached);
-            log.info("Updated SLA breach status for request {} to {}", requestId, isBreached);
-             return serviceRequestRepository.save(request);
+        for (ServiceRequest request : requests) {
+            try {
+                boolean isBreached = checkSlaBreached(request);
+
+                if (request.getIsSlaBreached() == null || !request.getIsSlaBreached()) {
+                    request.setIsSlaBreached(isBreached);
+                    serviceRequestRepository.save(request);
+
+                    log.warn("SLA BREACH: Request {} ({}|{}) exceeded deadline: {}",
+                            request.getId(),
+                            request.getCategory(),
+                            request.getPriority(),
+                            request.getSlaDeadline());
+                }
+            } catch (Exception e) {
+                log.error("Failed to update SLA breach for request {}: {}",
+                        request.getId(), e.getMessage(), e);
+            }
         }
-
-        return request;
     }
 
     @Override
@@ -89,8 +99,8 @@ public class SlaServiceImpl implements SlaService {
         }
 
         Duration duration = Duration.between(
-            request.getCreatedAt(),
-            request.getFirstResponseAt()
+                request.getCreatedAt(),
+                request.getFirstResponseAt()
         );
 
         double hours = duration.toMinutes() / 60.0;
@@ -106,8 +116,8 @@ public class SlaServiceImpl implements SlaService {
         }
 
         Duration duration = Duration.between(
-            request.getCreatedAt(),
-            request.getResolvedAt()
+                request.getCreatedAt(),
+                request.getResolvedAt()
         );
 
         double hours = duration.toMinutes() / 60.0;

@@ -1,12 +1,11 @@
 package com.servicehub.service;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import com.servicehub.model.ServiceRequest;
 
 public interface SlaService {
-    
+
     /**
      * Calculates and sets the SLA deadline for a service request
      * Uses category + priority to lookup SLA policy and calculate deadline
@@ -14,21 +13,19 @@ public interface SlaService {
      * @return the calculated deadline
      */
     OffsetDateTime calculateAndSetSlaDeadline(ServiceRequest request);
-    
+
     /**
      * Checks if a service request has breached its SLA deadline
      * @param request the service request to check
      * @return true if breached, false otherwise
      */
     boolean checkSlaBreached(ServiceRequest request);
-    
+
     /**
      * Detects and updates SLA breach status for a specific request
      * Sets is_sla_breached flag if current time exceeds sla_deadline
-     * @param requestId the ID of the service request
-     * @return the updated service request
      */
-    ServiceRequest detectAndUpdateBreachStatus(UUID requestId);
+    void detectAndUpdateBreachStatus();
 
     /**
      * Calculates response time in hours for a resolved request
