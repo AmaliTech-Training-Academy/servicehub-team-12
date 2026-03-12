@@ -57,4 +57,44 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
         @Param("now")       OffsetDateTime now,
         @Param("threshold") OffsetDateTime threshold
     );
+
+    /**
+     * Tickets assigned to a specific agent whose SLA deadline falls within the
+     * next two hours and have not yet breached — drives the at-risk warning
+     * panel on the agent dashboard.
+     * Results are ordered by deadline ascending so the most urgent appear first.
+     */
+    @Query("""
+        SELECT sr
+        FROM   ServiceRequest sr
+        WHERE  sr.isSlaBreached = false
+        AND    sr.status NOT IN :excluded
+        AND    sr.slaDeadline IS NOT NULL
+        AND    sr.slaDeadline BETWEEN :now AND :threshold
+        AND    sr.assignedTo.id = :agentId
+        ORDER  BY sr.slaDeadline ASC
+        """)
+    List<ServiceRequest> findAtRiskTicketsForAgent(
+        @Param("excluded")  List<RequestStatus> excluded,
+        @Param("agentId")   UUID agentId,
+        @Param("now")       OffsetDateTime now,
+        @Param("threshold") OffsetDateTime threshold
+    );
+
+    /**
+     * Count of tickets that are currently breached and have not yet been
+     * resolved or closed for a specific agent — drives the live "Active
+     * Breaches" KPI card on the agent dashboard.
+     */
+    @Query("""
+        SELECT COUNT(sr)
+        FROM   ServiceRequest sr
+        WHERE  sr.assignedTo.id = :agentId
+        AND    sr.isSlaBreached = true
+        AND    sr.status NOT IN :excluded
+        """)
+    long countActiveBreachesForAgent(
+        @Param("agentId")  UUID agentId,
+        @Param("excluded") List<RequestStatus> excluded
+    );
 }

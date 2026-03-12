@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -80,10 +81,68 @@ public class DashboardController {
     @GetMapping("/agent")
     public String agentDashboard(Model model, @AuthenticationPrincipal User principal) {
         model.addAttribute("userRole", principal != null ? principal.getRole().name() : "AGENT");
-        if (principal != null) {
-            model.addAttribute("currentUserName", principal.getFullName());
+
+        if (principal == null) {
+            model.addAttribute("agentName",        "Agent");
+            model.addAttribute("currentWeek",      Collections.emptyList());
+            model.addAttribute("weekTrend",        Collections.emptyList());
+            model.addAttribute("atRiskTickets",    Collections.emptyList());
+            // Scalar KPI defaults so Thymeleaf never encounters missing variables
+            model.addAttribute("etlDataAvailable", false);
+            model.addAttribute("weekAssigned",     0);
+            model.addAttribute("weekResolved",     0);
+            model.addAttribute("weekCompliance",   0.0);
+            model.addAttribute("weekAvgHours",     0.0);
+            model.addAttribute("activeBreaches",   0L);
+            return "dashboard/agent";
         }
-        model.addAttribute("currentWeek", Collections.emptyList());
+
+        model.addAttribute("agentName", principal.getFullName());
+
+        // ── ETL-sourced analytics for this specific agent ────────────────────
+        // Filtered by the agent's UUID which the Airflow pipeline stores as
+        // agent_id in analytics_agent_performance (matches User.id).
+        UUID agentId = principal.getId();
+
+        List<AgentLeaderboardEntry> currentWeek =
+                analyticsService.getCurrentWeekForAgent(agentId);
+        model.addAttribute("currentWeek", currentWeek);
+
+        // Last 4 weeks for the trend charts
+        List<AgentLeaderboardEntry> weekTrend =
+                analyticsService.getAgentWeekTrend(agentId, 4);
+        model.addAttribute("weekTrend", weekTrend);
+
+        // ── Derived KPI scalars — same pattern as adminDashboard ─────────────
+        // Admin derives totalTickets / overallCompliance from slaMetrics (an
+        // empty list yields 0). We do the same here so the template always has
+        // concrete values to render and never needs to guard with th:if.
+        boolean etlDataAvailable = !currentWeek.isEmpty();
+        int     weekAssigned     = etlDataAvailable ? currentWeek.getFirst().getTicketsAssigned()       : 0;
+        int     weekResolved     = etlDataAvailable ? currentWeek.getFirst().getTicketsResolved()       : 0;
+        double  weekCompliance   = etlDataAvailable ? currentWeek.getFirst().getSlaComplianceRatePct()  : 0.0;
+        double  weekAvgHours     = etlDataAvailable ? currentWeek.getFirst().getAvgResolutionHours()    : 0.0;
+
+        model.addAttribute("etlDataAvailable", etlDataAvailable);
+        model.addAttribute("weekAssigned",     weekAssigned);
+        model.addAttribute("weekResolved",     weekResolved);
+        model.addAttribute("weekCompliance",   weekCompliance);
+        model.addAttribute("weekAvgHours",     weekAvgHours);
+
+        // ── Live at-risk tickets and active breaches for this agent ──────────
+        // Queried directly from service_requests so the panel reflects the
+        // current state between ETL runs (mirrors activeBreaches on admin dash).
+        OffsetDateTime now       = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime threshold = now.plusHours(2);
+
+        List<ServiceRequest> atRiskTickets =
+                serviceRequestRepository.findAtRiskTicketsForAgent(
+                        DONE_STATUSES, agentId, now, threshold);
+        model.addAttribute("atRiskTickets", atRiskTickets);
+
+        long activeBreaches = serviceRequestRepository.countActiveBreachesForAgent(agentId, DONE_STATUSES);
+        model.addAttribute("activeBreaches", activeBreaches);
+
         return "dashboard/agent";
     }
 

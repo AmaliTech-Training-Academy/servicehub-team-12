@@ -119,6 +119,66 @@ public class AnalyticsDashboardRepository {
     }
 
     /**
+     * Current-week performance row for a single agent, identified by their
+     * {@code agent_id} UUID.  Returns a one-element list when data exists, or
+     * an empty list when the ETL has not run yet or the agent has no row.
+     *
+     * @param agentId the {@link java.util.UUID} of the authenticated agent
+     */
+    public List<AgentLeaderboardEntry> findCurrentWeekForAgent(java.util.UUID agentId) {
+        try {
+            return jdbc.query(
+                """
+                SELECT *
+                FROM   analytics_agent_performance
+                WHERE  agent_id = ?
+                AND    week_start = (
+                    SELECT MAX(week_start)
+                    FROM   analytics_agent_performance
+                    WHERE  agent_id = ?
+                )
+                """,
+                AGENT_ROW_MAPPER,
+                agentId.toString(), agentId.toString()
+            );
+        } catch (DataAccessException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Last {@code weeks} weeks of performance history for a single agent,
+     * ordered oldest-to-newest — used for the trend charts on the agent
+     * dashboard.
+     *
+     * @param agentId the {@link java.util.UUID} of the authenticated agent
+     * @param weeks   number of distinct week_start values to include
+     */
+    public List<AgentLeaderboardEntry> findAgentWeekTrend(java.util.UUID agentId, int weeks) {
+        try {
+            return jdbc.query(
+                """
+                SELECT *
+                FROM   analytics_agent_performance
+                WHERE  agent_id = ?
+                AND    week_start IN (
+                    SELECT DISTINCT week_start
+                    FROM   analytics_agent_performance
+                    WHERE  agent_id = ?
+                    ORDER  BY week_start DESC
+                    LIMIT  ?
+                )
+                ORDER  BY week_start
+                """,
+                AGENT_ROW_MAPPER,
+                agentId.toString(), agentId.toString(), weeks
+            );
+        } catch (DataAccessException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
      * Current-week agent rows ranked by SLA compliance descending — used for
      * the leaderboard card on the Agents tab.
      */
