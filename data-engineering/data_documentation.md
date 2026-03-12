@@ -199,7 +199,7 @@ load, so each table reflects the latest full snapshot available at run time.
 - Only requests with `assigned_to_id` are included.
 - `week_start` is derived from the request `created_at` week, not `resolved_at`.
 - `sla_compliance_rate_pct` is `0.0` when `tickets_resolved = 0`.
-- This table is recomputed hourly, even though the metric grain is weekly.
+- This table is recomputed frequently (every minute by default), even though the metric grain is weekly.
 
 ---
 
@@ -228,7 +228,7 @@ load, so each table reflects the latest full snapshot available at run time.
 - Only requests with `department_id` are included.
 - `week_start` is derived from the request `created_at` week.
 - `open_tickets` uses the current request status from the ETL snapshot.
-- This table is recomputed hourly, even though the metric grain is weekly.
+- This table is recomputed frequently (every minute by default), even though the metric grain is weekly.
 
 ---
 
@@ -323,12 +323,12 @@ The request validator splits the extracted dataset into valid and invalid rows.
 
 - Use a modular Python ETL structure with separate extraction, validation, transformation, and loading modules.
 - Use Apache Airflow to orchestrate extraction, validation/quarantine, and per-table load tasks.
-- Recompute the analytics outputs on an hourly schedule from the latest source snapshot.
+- Recompute the analytics outputs on a frequent schedule (every minute by default) from the latest source snapshot.
 - Persist invalid request and SLA policy rows to dedicated analytics quarantine tables.
 
 #### Current pipeline behavior
 
-- **Schedule**: hourly (`0 * * * *`)
+- **Schedule**: every minute (`*/1 * * * *`)
 - **Main DAG**: `servicehub_sla_analytics`
 - **Key task flow**:
   - `extract_requests`
@@ -356,5 +356,5 @@ The request validator splits the extracted dataset into valid and invalid rows.
 #### Consequences
 
 - The pipeline remains resilient to row-level data issues through quarantine tables.
-- Weekly-grain analytics can still be refreshed hourly to reflect the latest operational state.
+- Weekly-grain analytics can still be refreshed every minute to reflect the latest operational state.
 - The analytics tables are easy to reason about because each run replaces the prior snapshot rather than applying incremental merge logic.
