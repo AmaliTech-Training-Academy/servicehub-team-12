@@ -25,8 +25,11 @@ public class ServiceRequestResponse {
     private RequestPriority priority;
     private RequestStatus status;
     private UUID departmentId;
+    private String departmentName;
     private UUID assignedToId;
+    private String assignedAgentName;
     private UUID requesterId;
+    private String requesterName;
     private OffsetDateTime slaDeadline;
     private OffsetDateTime firstResponseAt;
     private OffsetDateTime resolvedAt;

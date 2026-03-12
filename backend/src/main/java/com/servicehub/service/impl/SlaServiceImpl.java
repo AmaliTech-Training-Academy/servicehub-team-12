@@ -1,10 +1,12 @@
 package com.servicehub.service.impl;
 
+import com.servicehub.event.ServiceRequestCreatedEvent;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,11 @@ public class SlaServiceImpl implements SlaService {
     private final SlaPolicyRepository slaPolicyRepository;
     private final ServiceRequestRepository serviceRequestRepository;
     private final WorkingHoursCalculator workingHoursCalculator;
+
+    @EventListener
+    public void handleServiceRequestCreated(ServiceRequestCreatedEvent event) {
+        calculateAndSetSlaDeadline(event.request());
+    }
 
     @Override
     @Transactional

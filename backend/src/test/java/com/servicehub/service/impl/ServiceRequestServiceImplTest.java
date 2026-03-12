@@ -6,25 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.dto.ServiceRequestUpsertRequest;
+import com.servicehub.event.ServiceRequestCreatedEvent;
+import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.Department;
 import com.servicehub.model.ServiceRequest;
-import com.servicehub.model.SlaPolicy;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestPriority;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
-import com.servicehub.repository.SlaPolicyRepository;
 import com.servicehub.repository.UserRepository;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -51,24 +51,26 @@ class ServiceRequestServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private SlaPolicyRepository slaPolicyRepository;
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private ServiceRequestMapper serviceRequestMapper;
 
     private ServiceRequestServiceImpl serviceRequestService;
 
     @BeforeEach
     void setUp() {
         serviceRequestService = new ServiceRequestServiceImpl(
-                serviceRequestRepository, departmentRepository, userRepository, slaPolicyRepository);
+                serviceRequestRepository, departmentRepository, userRepository, eventPublisher, serviceRequestMapper);
     }
 
     @Test
-    @DisplayName("create: builds request, auto-routes department, and computes SLA deadline")
-    void createShouldBuildAndPersistWithAutoRoutedDepartmentAndSlaDeadline() {
+    @DisplayName("create: builds request, auto-routes department, and publishes SLA event")
+    void createShouldBuildAndPersistWithAutoRoutedDepartmentAndPublishSlaEvent() {
         UUID requesterId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
         User requester = user(requesterId);
         Department department = department(departmentId, RequestCategory.IT_SUPPORT);
-        SlaPolicy slaPolicy = slaPolicy(RequestCategory.IT_SUPPORT, RequestPriority.HIGH);
 
         ServiceRequestUpsertRequest request = new ServiceRequestUpsertRequest();
         request.setTitle("  Laptop issue  ");
@@ -79,10 +81,10 @@ class ServiceRequestServiceImplTest {
 
         when(userRepository.findById(requesterId)).thenReturn(Optional.of(requester));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(department));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.IT_SUPPORT, RequestPriority.HIGH))
-                .thenReturn(Optional.of(slaPolicy));
         when(serviceRequestRepository.save(any(ServiceRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(serviceRequestMapper.toResponse(any(ServiceRequest.class)))
+                .thenAnswer(invocation -> toResponse(invocation.getArgument(0)));
 
         ServiceRequestResponse response = serviceRequestService.create(request);
 
@@ -90,8 +92,10 @@ class ServiceRequestServiceImplTest {
         assertEquals(RequestStatus.OPEN, response.getStatus());
         assertEquals(departmentId, response.getDepartmentId());
         assertEquals(requesterId, response.getRequesterId());
-        assertNotNull(response.getSlaDeadline());
-        assertFalse(response.getIsSlaBreached());
+        verify(eventPublisher).publishEvent(argThat((Object event) ->
+                event instanceof ServiceRequestCreatedEvent(ServiceRequest request1)
+                        && request1.getRequester().getId().equals(requesterId)
+                        && request1.getDepartment().getId().equals(departmentId)));
     }
 
     @Test
@@ -119,6 +123,8 @@ class ServiceRequestServiceImplTest {
         ServiceRequest first = serviceRequest(UUID.randomUUID(), "First");
         ServiceRequest second = serviceRequest(UUID.randomUUID(), "Second");
         when(serviceRequestRepository.findAll()).thenReturn(List.of(first, second));
+        when(serviceRequestMapper.toResponse(first)).thenReturn(toResponse(first));
+        when(serviceRequestMapper.toResponse(second)).thenReturn(toResponse(second));
 
         List<ServiceRequestResponse> responses = serviceRequestService.findAll();
 
@@ -133,6 +139,7 @@ class ServiceRequestServiceImplTest {
         UUID requestId = UUID.randomUUID();
         ServiceRequest serviceRequest = serviceRequest(requestId, "Printer issue");
         when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(serviceRequest));
+        when(serviceRequestMapper.toResponse(serviceRequest)).thenReturn(toResponse(serviceRequest));
 
         ServiceRequestResponse response = serviceRequestService.findById(requestId);
 
@@ -163,7 +170,6 @@ class ServiceRequestServiceImplTest {
         ServiceRequest existing = serviceRequest(requestId, "Old title");
         existing.setStatus(RequestStatus.OPEN);
         existing.setRequester(user(requesterId));
-        existing.setSlaDeadline(OffsetDateTime.now(ZoneOffset.UTC).plusHours(4));
 
         ServiceRequestUpsertRequest updateRequest = new ServiceRequestUpsertRequest();
         updateRequest.setTitle("New title");
@@ -173,15 +179,13 @@ class ServiceRequestServiceImplTest {
         updateRequest.setStatus(RequestStatus.RESOLVED);
 
         Department routedDepartment = department(departmentId, RequestCategory.FACILITIES);
-        SlaPolicy slaPolicy = slaPolicy(RequestCategory.FACILITIES, RequestPriority.CRITICAL);
-
         when(serviceRequestRepository.findById(requestId)).thenReturn(Optional.of(existing));
         when(userRepository.findById(assigneeId)).thenReturn(Optional.of(user(assigneeId)));
         when(departmentRepository.findByCategory(RequestCategory.FACILITIES)).thenReturn(Optional.of(routedDepartment));
-        when(slaPolicyRepository.findByCategoryAndPriority(RequestCategory.FACILITIES, RequestPriority.CRITICAL))
-                .thenReturn(Optional.of(slaPolicy));
         when(serviceRequestRepository.save(any(ServiceRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(serviceRequestMapper.toResponse(any(ServiceRequest.class)))
+                .thenAnswer(invocation -> toResponse(invocation.getArgument(0)));
 
         ServiceRequestResponse response = serviceRequestService.update(requestId, updateRequest);
 
@@ -189,10 +193,13 @@ class ServiceRequestServiceImplTest {
         assertEquals(RequestCategory.FACILITIES, response.getCategory());
         assertEquals(RequestPriority.CRITICAL, response.getPriority());
         assertEquals(RequestStatus.RESOLVED, response.getStatus());
-        assertNotNull(response.getFirstResponseAt());
-        assertNotNull(response.getResolvedAt());
         assertEquals(departmentId, response.getDepartmentId());
         assertEquals(assigneeId, response.getAssignedToId());
+        verify(eventPublisher).publishEvent(argThat((Object event) ->
+                event instanceof ServiceRequestCreatedEvent createdEvent
+                        && createdEvent.request().getId().equals(requestId)
+                        && createdEvent.request().getCategory() == RequestCategory.FACILITIES
+                        && createdEvent.request().getPriority() == RequestPriority.CRITICAL));
     }
 
     @Test
@@ -239,6 +246,8 @@ class ServiceRequestServiceImplTest {
                 .thenReturn(Optional.of(department(UUID.randomUUID(), RequestCategory.HR_REQUEST)));
         when(serviceRequestRepository.save(any(ServiceRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(serviceRequestMapper.toResponse(any(ServiceRequest.class)))
+                .thenAnswer(invocation -> toResponse(invocation.getArgument(0)));
 
         ServiceRequestResponse response = serviceRequestService.create(request);
 
@@ -261,16 +270,6 @@ class ServiceRequestServiceImplTest {
         return department;
     }
 
-    private SlaPolicy slaPolicy(RequestCategory category, RequestPriority priority) {
-        SlaPolicy policy = new SlaPolicy();
-        policy.setId(UUID.randomUUID());
-        policy.setCategory(category);
-        policy.setPriority(priority);
-        policy.setResolutionTimeHours(8);
-        policy.setResponseTimeHours(1);
-        return policy;
-    }
-
     private ServiceRequest serviceRequest(UUID id, String title) {
         ServiceRequest request = new ServiceRequest();
         request.setId(id);
@@ -281,5 +280,26 @@ class ServiceRequestServiceImplTest {
         request.setIsSlaBreached(Boolean.FALSE);
         request.setRequester(user(UUID.randomUUID()));
         return request;
+    }
+
+    private ServiceRequestResponse toResponse(ServiceRequest serviceRequest) {
+        return ServiceRequestResponse.builder()
+                .id(serviceRequest.getId())
+                .title(serviceRequest.getTitle())
+                .description(serviceRequest.getDescription())
+                .category(serviceRequest.getCategory())
+                .priority(serviceRequest.getPriority())
+                .status(serviceRequest.getStatus())
+                .departmentId(serviceRequest.getDepartment() == null ? null : serviceRequest.getDepartment().getId())
+                .assignedToId(serviceRequest.getAssignedTo() == null ? null : serviceRequest.getAssignedTo().getId())
+                .requesterId(serviceRequest.getRequester() == null ? null : serviceRequest.getRequester().getId())
+                .slaDeadline(serviceRequest.getSlaDeadline())
+                .firstResponseAt(serviceRequest.getFirstResponseAt())
+                .resolvedAt(serviceRequest.getResolvedAt())
+                .closedAt(serviceRequest.getClosedAt())
+                .isSlaBreached(serviceRequest.getIsSlaBreached())
+                .createdAt(serviceRequest.getCreatedAt())
+                .updatedAt(serviceRequest.getUpdatedAt())
+                .build();
     }
 }
