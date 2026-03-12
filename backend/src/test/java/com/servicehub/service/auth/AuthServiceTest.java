@@ -111,6 +111,7 @@ class AuthServiceTest {
 
             AuthResponse response = authService.register(validRegisterRequest);
 
+            assertThat(response.getId()).isEqualTo(sampleUser.getId());
             assertThat(response.getToken()).isEqualTo(ACCESS_TOKEN);
             assertThat(response.getRefreshToken()).isNotBlank();
             assertThat(response.getEmail()).isEqualTo(EMAIL);
@@ -235,6 +236,7 @@ class AuthServiceTest {
 
             AuthResponse response = authService.login(validLoginRequest);
 
+            assertThat(response.getId()).isEqualTo(sampleUser.getId());
             assertThat(response.getToken()).isEqualTo(ACCESS_TOKEN);
             assertThat(response.getRefreshToken()).isNotBlank();
             assertThat(response.getEmail()).isEqualTo(EMAIL);
@@ -317,6 +319,7 @@ class AuthServiceTest {
 
             AuthResponse response = authService.refresh(refreshRequest);
 
+            assertThat(response.getId()).isEqualTo(sampleUser.getId());
             assertThat(response.getToken()).isEqualTo(ACCESS_TOKEN);
             assertThat(response.getRefreshToken()).isNotBlank();
             assertThat(response.getEmail()).isEqualTo(EMAIL);
