@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -31,6 +32,9 @@ class WorkflowServiceImplTest {
 
     @Mock
     private ServiceRequestService serviceRequestService;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     private ServiceRequest testRequest;
 
@@ -57,7 +61,6 @@ class WorkflowServiceImplTest {
         assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
         assertNotNull(testRequest.getFirstResponseAt());
         assertNotNull(testRequest.getUpdatedAt());
-        verify(serviceRequestService).autoAssign(testRequest.getId());
     }
 
     @Test
