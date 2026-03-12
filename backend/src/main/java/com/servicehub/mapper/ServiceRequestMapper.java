@@ -13,8 +13,11 @@ import java.util.UUID;
 public interface ServiceRequestMapper {
 
     @Mapping(target = "departmentId", source = "department.id")
+    @Mapping(target = "departmentName", source = "department.name")
     @Mapping(target = "assignedToId", source = "assignedTo.id")
+    @Mapping(target = "assignedAgentName", source = "assignedTo.fullName")
     @Mapping(target = "requesterId", source = "requester.id")
+    @Mapping(target = "requesterName", source = "requester.fullName")
     ServiceRequestResponse toResponse(ServiceRequest serviceRequest);
 
     ServiceRequest toEntity(ServiceRequestResponse serviceRequestResponse);
