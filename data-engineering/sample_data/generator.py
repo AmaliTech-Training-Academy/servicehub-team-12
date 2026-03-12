@@ -136,6 +136,10 @@ TITLE_TEMPLATES = {
 class SampleConfig:
     """
     Configuration for generated sample data.
+
+    - num_requests: how many service_requests rows to generate.
+    - days_back: spread created_at uniformly across this range.
+    - num_agents / num_requesters: only used by in-memory/local test helpers.
     """
 
     num_requests: int = 200
@@ -145,35 +149,22 @@ class SampleConfig:
 
 
 def _utcnow() -> datetime:
+    """Return the current UTC time with microseconds stripped."""
     return datetime.now(timezone.utc).replace(microsecond=0)
 
 
 def _table_columns(engine: Engine, table_name: str) -> Dict[str, Any]:
+    """Return a mapping of column name -> type for the given table."""
     return {
         column["name"]: column["type"]
         for column in inspect(engine).get_columns(table_name)
     }
 
 
-def _filter_row_for_columns(
-    row: Dict[str, Any],
-    columns: Iterable[str],
-) -> Dict[str, Any]:
-    return {key: value for key, value in row.items() if key in columns}
-
-
-def _insert_row(conn: Any, table_name: str, row: Dict[str, Any]) -> Any:
-    column_names = list(row.keys())
-    columns_sql = ", ".join(column_names)
-    values_sql = ", ".join(f":{name}" for name in column_names)
-    query = text(
-        f"INSERT INTO {table_name} ({columns_sql}) "
-        f"VALUES ({values_sql}) RETURNING id"
-    )
-    return conn.execute(query, row).scalar_one()
-
-
 def _build_local_departments() -> pd.DataFrame:
+    """
+    Build an in-memory departments dataframe for tests-only usage.
+    """
     now = _utcnow()
     rows = []
     for category, spec in DEPARTMENT_SPECS.items():
@@ -195,6 +186,9 @@ def _build_local_users(
     config: SampleConfig,
     departments_df: pd.DataFrame,
 ) -> pd.DataFrame:
+    """
+    Build an in-memory users dataframe (agents + requesters) for tests-only usage.
+    """
     now = _utcnow()
     department_lookup = departments_df.set_index("category").to_dict("index")
     rows: List[Dict[str, Any]] = []
@@ -247,10 +241,12 @@ def _build_local_users(
 
 
 def _choose_title(category: str) -> str:
+    """Pick a random human-readable title for the given category."""
     return random.choice(TITLE_TEMPLATES[category])
 
 
 def _choose_description(category: str, priority: str) -> str:
+    """Generate a simple description text for the given category/priority."""
     if category == "IT_SUPPORT":
         return (
             f"{priority.title()} ticket: employee reported a technology "
@@ -268,58 +264,43 @@ def _choose_description(category: str, priority: str) -> str:
 
 
 def _ensure_departments(engine: Engine) -> pd.DataFrame:
+    """
+    Load existing departments seeded by the backend.
+
+    This function assumes departments have already been created by the
+    application migrations/seed scripts. It does not insert any new
+    departments; it simply returns the current active ones with the
+    columns needed by the generator.
+    """
     columns = _table_columns(engine, "departments")
-    now = _utcnow()
-    rows = []
-    lookup_column = "category" if "category" in columns else "name"
+    required_columns = {"id", "name"}
+    missing = required_columns - set(columns.keys())
+    if missing:
+        raise RuntimeError(
+            f"departments table is missing required columns for sample generation: {missing}"
+        )
 
-    with engine.begin() as conn:
-        for category, spec in DEPARTMENT_SPECS.items():
-            lookup_value = (
-                category if lookup_column == "category" else spec["name"]
-            )
-            existing = (
-                conn.execute(
-                    text(
-                        "SELECT id FROM departments "
-                        f"WHERE {lookup_column} = :lookup LIMIT 1"
-                    ),
-                    {"lookup": lookup_value},
-                )
-                .mappings()
-                .first()
-            )
+    query = text(
+        """
+        SELECT id,
+               name,
+               category
+        FROM departments
+        WHERE is_active = TRUE
+        """
+    )
 
-            if existing is None:
-                department_row = _filter_row_for_columns(
-                    {
-                        "name": spec["name"],
-                        "description": spec["description"],
-                        "category": category,
-                        "contact_email": spec["contact_email"],
-                        "is_active": True,
-                        "created_at": now,
-                    },
-                    columns,
-                )
-                department_id = _insert_row(
-                    conn,
-                    "departments",
-                    department_row,
-                )
-            else:
-                department_id = existing["id"]
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
 
-            rows.append(
-                {
-                    "id": department_id,
-                    "category": category,
-                    "name": spec["name"],
-                    "contact_email": spec["contact_email"],
-                }
-            )
+    if df.empty:
+        raise RuntimeError(
+            "No active departments found. Backend seeds must be applied before "
+            "running the sample data generator."
+        )
 
-    return pd.DataFrame(rows)
+    logger.info("Loaded %d departments from backend seed data.", len(df))
+    return df
 
 
 def _ensure_users(
@@ -327,60 +308,58 @@ def _ensure_users(
     departments_df: pd.DataFrame,
     config: SampleConfig,
 ) -> pd.DataFrame:
+    """
+    Load existing users seeded by the backend and join them with departments.
+
+    The backend is responsible for creating both AGENT and USER accounts
+    with appropriate roles and department assignments. This function does
+    not create users; it reads them and prepares a dataframe with the
+    columns required by the generator.
+    """
     columns = _table_columns(engine, "users")
-    local_users = _build_local_users(config, departments_df)
-    rows = []
+    required_columns = {"id", "email", "role"}
+    missing = required_columns - set(columns.keys())
+    if missing:
+        raise RuntimeError(
+            f"users table is missing required columns for sample generation: {missing}"
+        )
 
-    with engine.begin() as conn:
-        for user in local_users.to_dict("records"):
-            existing = (
-                conn.execute(
-                    text("SELECT id FROM users WHERE email = :email LIMIT 1"),
-                    {"email": user["email"]},
-                )
-                .mappings()
-                .first()
-            )
+    query = text(
+        """
+        SELECT u.id,
+               u.email,
+               u.role,
+               COALESCE(u.full_name, u.name) AS full_name,
+               COALESCE(u.name, u.full_name) AS name,
+               u.department_id,
+               d.name AS department,
+               d.category AS department_category
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.is_active = TRUE
+        """
+    )
 
-            if existing is None:
-                user_row = _filter_row_for_columns(
-                    {
-                        "email": user["email"],
-                        "password": user["password"],
-                        "full_name": user["full_name"],
-                        "name": user["name"],
-                        "role": user["role"],
-                        "department_id": user["department_id"],
-                        "department": user["department"],
-                        "is_active": user["is_active"],
-                        "created_at": user["created_at"],
-                        "updated_at": user["updated_at"],
-                    },
-                    columns,
-                )
-                user_id = _insert_row(conn, "users", user_row)
-            else:
-                user_id = existing["id"]
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
 
-            rows.append(
-                {
-                    "id": user_id,
-                    "email": user["email"],
-                    "role": user["role"],
-                    "full_name": user["full_name"],
-                    "name": user["name"],
-                    "department_id": user["department_id"],
-                    "department": user["department"],
-                    "department_category": user["department_category"],
-                }
-            )
+    if df.empty:
+        raise RuntimeError(
+            "No active users found. Backend seeds must be applied before "
+            "running the sample data generator."
+        )
 
-    return pd.DataFrame(rows)
+    logger.info("Loaded %d users from backend seed data.", len(df))
+    return df
 
 
 def _build_local_reference_data(
     config: SampleConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Build local departments and users dataframes for tests that exercise the
+    generator without a running database.
+    """
     departments_df = _build_local_departments()
     users_df = _build_local_users(config, departments_df)
     return departments_df, users_df
@@ -392,8 +371,11 @@ def generate_sample_requests(
     users_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
-    Generate a dataframe of synthetic service requests aligned with the
-    data contract.
+    Generate a dataframe of synthetic service requests.
+
+    When `departments_df` and `users_df` are provided, they are assumed to
+    come from the real database (back-end seeds). Otherwise, local in-memory
+    reference data is constructed for use in tests.
     """
     cfg = config or SampleConfig()
     if departments_df is None or users_df is None:
@@ -570,6 +552,10 @@ def _service_request_insert_frame(
     engine: Engine,
     df: pd.DataFrame,
 ) -> pd.DataFrame:
+    """
+    Project the generated dataframe down to the columns that exist in the
+    current `service_requests` table, dropping any extras.
+    """
     columns = _table_columns(engine, "service_requests")
     prepared = df.copy()
 
@@ -588,7 +574,12 @@ def load_sample_requests(
     config: SampleConfig | None = None,
 ) -> None:
     """
-    Generate and load sample source data into the ServiceHub database.
+    Generate and load sample `service_requests` rows into the database.
+
+    This function:
+    - Reads existing departments and users seeded by the backend.
+    - Generates realistic tickets across all categories and priorities.
+    - Appends the generated rows to the `service_requests` table.
     """
     cfg = config or SampleConfig()
     departments_df = _ensure_departments(engine)

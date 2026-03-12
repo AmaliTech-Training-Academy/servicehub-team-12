@@ -12,6 +12,7 @@ from sqlalchemy.engine import Engine
 
 from config import DATABASE_URL
 from etl import (
+    extract_daily_volume_aggregates,
     extract_requests,
     extract_sla_policies,
     load_analytics,
@@ -90,7 +91,8 @@ def run_pipeline(database_url: Optional[str] = None) -> None:
         sla_metrics = transform_sla_metrics(valid_requests, valid_sla)
         load_analytics(sla_metrics, "analytics_sla_metrics", engine)
 
-        daily_volume = transform_daily_volume(valid_requests)
+        daily_volume_source = extract_daily_volume_aggregates(engine)
+        daily_volume = transform_daily_volume(daily_volume_source)
         load_analytics(daily_volume, "analytics_daily_volume", engine)
 
         agent_performance = transform_agent_performance(valid_requests)

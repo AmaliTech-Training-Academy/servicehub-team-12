@@ -160,7 +160,17 @@ def test_transform_sla_metrics_computes_expected_columns_and_values():
 def test_transform_daily_volume_computes_request_counts():
     requests_df = _requests_for_transformations()
 
-    result = transform_daily_volume(requests_df)
+    # Simulate pre-aggregated daily volume as returned from the database.
+    working = requests_df.copy()
+    working["created_at"] = pd.to_datetime(working["created_at"])
+    working["report_date"] = working["created_at"].dt.date
+    aggregated = (
+        working.groupby(["report_date", "category", "priority", "status"], dropna=False)
+        .agg(ticket_count=("id", "count"))
+        .reset_index()
+    )
+
+    result = transform_daily_volume(aggregated)
 
     assert not result.empty
     expected_columns = {
