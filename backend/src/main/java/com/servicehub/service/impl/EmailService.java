@@ -6,16 +6,31 @@ import com.servicehub.service.Notification;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EmailService implements Notification {
 
     private final JavaMailSender mailSender;
+    private final SpringTemplateEngine templateEngine;
 
+
+    @Retryable(
+            retryFor = Exception.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000, multiplier = 2)
+    )
+    @Async
     @Override
     public void sendSlaBreachNotification(String to, ServiceRequest serviceRequest) throws MessagingException {
 
@@ -25,53 +40,28 @@ public class EmailService implements Notification {
         helper.setTo(to);
         helper.setSubject("⚠ SLA Breached: " + serviceRequest.getTitle());
 
-        String html = """
-        <html>
-        <body style="font-family: Arial, sans-serif;">
-            <h2 style="color:#d9534f;">SLA Breach Notification</h2>
-            <p>Hello,</p>
+        Context context = new Context();
+        context.setVariable("title", serviceRequest.getTitle());
+        context.setVariable("status", serviceRequest.getStatus());
+        context.setVariable("priority", serviceRequest.getPriority());
+        context.setVariable("slaDeadline", serviceRequest.getSlaDeadline());
 
-            <p>The following service request has <b>breached its SLA deadline</b>.</p>
-
-            <table border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                    <td><b>Title</b></td>
-                    <td>%s</td>
-                </tr>
-                <tr>
-                    <td><b>Status</b></td>
-                    <td>%s</td>
-                </tr>
-                <tr>
-                    <td><b>Priority</b></td>
-                    <td>%s</td>
-                </tr>
-                <tr>
-                    <td><b>SLA Deadline</b></td>
-                    <td>%s</td>
-                </tr>
-            </table>
-
-            <p>Please take action as soon as possible.</p>
-
-            <p>Regards,<br>
-            <b>ServiceHub System</b></p>
-        </body>
-        </html>
-        """.formatted(
-                serviceRequest.getTitle(),
-                serviceRequest.getStatus(),
-                serviceRequest.getPriority(),
-                serviceRequest.getSlaDeadline()
-        );
+        String html = templateEngine.process("email/sla-breach", context);;
 
         helper.setText(html, true);
 
         mailSender.send(message);
     }
 
+
+    @Retryable(
+            retryFor = Exception.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000, multiplier = 2)
+    )
+    @Async
     @Override
-    public void sendStatusUpdate(String to, String title, RequestStatus newStatus) {
+    public void sendStatusUpdate(String to, String title, RequestStatus status) {
         try {
 
             MimeMessage message = mailSender.createMimeMessage();
@@ -80,46 +70,18 @@ public class EmailService implements Notification {
             helper.setTo(to);
             helper.setSubject("Service Request Status Update");
 
-            String html = """
-                <html>
-                <body style="font-family: Arial, sans-serif;">
-                
-                    <h2 style="color:#2c3e50;">Service Request Update</h2>
-                
-                    <p>Hello,</p>
-                
-                    <p>The status of your service request has been updated.</p>
-                    
-                    <table style="border-collapse: collapse;">
-                        <tr>
-                            <td style="padding:8px;"><b>Request Title:</b></td>
-                            <td style="padding:8px;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:8px;"><b>New Status:</b></td>
-                            <td style="padding:8px;">%s</td>
-                        </tr>
-                    </table>
-                    
-                    <p style="margin-top:20px;">
-                        You can log in to the system to view more details.
-                    </p>
-                    
-                    <p>
-                        Regards,<br>
-                        <b>ServiceHub System</b>
-                    </p>
-                    
-                </body>
-                </html>
-                """.formatted(title, newStatus);
+            Context context = new Context();
+            context.setVariable("title", title);
+            context.setVariable("status", status);
+
+            String html = templateEngine.process("email/status-update", context);
 
             helper.setText(html, true);
 
             mailSender.send(message);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send status update email", e);
+            log.error("Email sending failed", e);
         }
     }
 }
