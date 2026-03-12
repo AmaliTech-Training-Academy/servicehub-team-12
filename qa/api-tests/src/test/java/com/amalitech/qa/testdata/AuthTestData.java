@@ -9,7 +9,7 @@ public class AuthTestData {
     // Valid registration data
     public static final String REGISTER_FIRST_NAME = "Test";
     public static final String REGISTER_LAST_NAME = "User";
-    public static final String REGISTER_EMAIL = "testuser2@amalitech.com";
+    public static final String REGISTER_EMAIL = "testuser3@amalitech.com";
     public static final String REGISTER_PASSWORD = "password123";
     public static final String REGISTER_DEPARTMENT = "IT";
     public static final String REGISTER_FULL_NAME = REGISTER_FIRST_NAME + " " + REGISTER_LAST_NAME;
