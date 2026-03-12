@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import com.servicehub.exception.SlaPolicyNotFoundException;
+import com.servicehub.event.ServiceRequestCreatedEvent;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.SlaPolicy;
 import com.servicehub.model.enums.RequestPriority;
@@ -144,6 +145,19 @@ class SlaServiceImplTest {
 
         assertNotNull(actualDeadline);
         verify(workingHoursCalculator).addBusinessHours(testRequest.getCreatedAt(), 168L);
+    }
+
+    @Test
+    @DisplayName("Should handle service request created event by setting SLA deadline")
+    void testHandleServiceRequestCreated() {
+        when(slaPolicyRepository.findByCategoryAndPriority(
+                RequestCategory.IT_SUPPORT, RequestPriority.CRITICAL))
+                .thenReturn(Optional.of(testPolicy));
+
+        slaService.handleServiceRequestCreated(new ServiceRequestCreatedEvent(testRequest));
+
+        assertNotNull(testRequest.getSlaDeadline());
+        verify(workingHoursCalculator).getNextWorkingHoursStart(testRequest.getCreatedAt());
     }
 
     @Test

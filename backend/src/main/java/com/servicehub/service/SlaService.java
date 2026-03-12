@@ -1,8 +1,7 @@
 package com.servicehub.service;
 
-import java.time.OffsetDateTime;
-
 import com.servicehub.model.ServiceRequest;
+import java.time.OffsetDateTime;
 
 public interface SlaService {
 
