@@ -64,9 +64,10 @@ module "ci_cd" {
 module "ecr" {
   source = "./modules/ecr"
 
-  repository_name = var.ecr_repository_name
-  environment     = var.environment
-  tags            = local.common_tags
+  repository_name      = var.ecr_repository_name
+  environment          = var.environment
+  image_tag_mutability = "MUTABLE"
+  tags                 = local.common_tags
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -80,6 +81,7 @@ module "iam" {
   environment        = var.environment
   s3_dags_bucket_arn = module.ci_cd.s3_dags_bucket_arn
   ecr_repository_arn = module.ecr.repository_arn
+  secret_arn         = module.secrets_manager.secret_arn
   tags               = local.common_tags
 }
 
@@ -157,6 +159,7 @@ module "app_runner" {
   security_group_ids = [module.security.app_runner_connector_security_group_id]
   instance_role_arn  = module.iam.app_runner_instance_role_arn
   access_role_arn    = module.iam.app_runner_ecr_access_role_arn
+  secret_arn         = module.secrets_manager.secret_arn
   tags               = local.common_tags
 
   environment_variables = {
@@ -164,8 +167,10 @@ module "app_runner" {
     DB_HOST                = module.database.db_address
     DB_PORT                = tostring(module.database.db_port)
     DB_NAME                = var.db_name
-    DB_USERNAME            = var.db_username
+    DB_USER                = var.db_username
     ENVIRONMENT            = var.environment
+    GOOGLE_CLIENT_ID       = "dummy-client-id"
+    GOOGLE_CLIENT_SECRET   = "dummy-client-secret"
   }
 }
 

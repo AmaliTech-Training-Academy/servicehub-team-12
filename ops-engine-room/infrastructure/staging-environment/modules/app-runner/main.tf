@@ -47,17 +47,23 @@ resource "aws_apprunner_service" "this" {
   service_name = "${local.name_prefix}-backend"
 
   source_configuration {
-    # Auto-deployments not supported for ECR_PUBLIC placeholder
-    auto_deployments_enabled = false
+    # Auto-deployments have been enabled to deploy new images automatically from ECR
+    auto_deployments_enabled = true
 
-    # Using bitnami nginx placeholder image
+    authentication_configuration {
+      access_role_arn = var.access_role_arn
+    }
+
     image_repository {
-      image_identifier      = "public.ecr.aws/bitnami/nginx:latest"
-      image_repository_type = "ECR_PUBLIC"
+      image_identifier      = "${var.ecr_repository_url}:latest"
+      image_repository_type = "ECR"
 
       image_configuration {
         port                          = var.port
         runtime_environment_variables = var.environment_variables
+        runtime_environment_secrets = {
+          DB_PASSWORD = "${var.secret_arn}:password::"
+        }
       }
     }
   }
