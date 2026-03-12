@@ -72,6 +72,7 @@ public class AuthViewController {
                 .orElseThrow(() -> new IllegalStateException("OAuth2 user not found after provisioning"));
         String token = jwtService.generateToken(user);
         AuthResponse auth = AuthResponse.builder()
+                .id(user.getId())
                 .token(token)
                 .email(user.getEmail())
                 .role(user.getRole().name())

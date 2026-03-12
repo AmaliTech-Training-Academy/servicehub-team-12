@@ -81,10 +81,10 @@ public class AuthServiceImpl implements AuthService {
                 .isActive(true)
                 .build();
 
-        userRepository.save(user);
-        log.info("New user registered: {}", user.getEmail());
+        User savedUser = userRepository.save(user);
+        log.info("New user registered: {}", savedUser.getEmail());
 
-        return buildAuthResponse(user);
+        return buildAuthResponse(savedUser);
     }
 
     // ── Login ─────────────────────────────────────────────────────────────────
@@ -184,6 +184,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(accessToken)
                 .refreshToken(rawRefresh)
                 .email(user.getEmail())
