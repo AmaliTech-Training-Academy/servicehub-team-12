@@ -15,6 +15,7 @@ import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
 import com.servicehub.service.assignment.AutoAssignmentStrategy;
 import com.servicehub.service.ServiceRequestService;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -51,6 +52,11 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         Department department = resolveDepartment(request.getCategory(), request.getDepartmentId());
         serviceRequest.setDepartment(department);
         ServiceRequest savedRequest = serviceRequestRepository.save(serviceRequest);
+
+        if (savedRequest.getAssignedTo() == null) {
+            autoAssign(savedRequest.getId());
+        }
+
         eventPublisher.publishEvent(new ServiceRequestCreatedEvent(savedRequest));
         return serviceRequestMapper.toResponse(savedRequest);
     }
@@ -169,7 +175,17 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
         }
 
         autoAssignmentStrategy.selectAssignee(serviceRequest)
-                .ifPresent(serviceRequest::setAssignedTo);
+                .ifPresent(assignee -> {
+                    serviceRequest.setAssignedTo(assignee);
+
+                    if (serviceRequest.getStatus() == RequestStatus.OPEN) {
+                        serviceRequest.setStatus(RequestStatus.ASSIGNED);
+
+                        if (serviceRequest.getFirstResponseAt() == null) {
+                            serviceRequest.setFirstResponseAt(OffsetDateTime.now());
+                        }
+                    }
+                });
     }
 
     @Override

@@ -8,15 +8,16 @@ import com.servicehub.event.StatusTransitionEvent;
 import com.servicehub.exception.InvalidTransitionException;
 import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.model.ServiceRequest;
+import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.service.Notification;
+import com.servicehub.service.ServiceRequestService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.service.WorkflowService;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     private final ServiceRequestRepository serviceRequestRepository;
     private final Notification emailService;
+    private final ServiceRequestService serviceRequestService;
 
     @EventListener
     void handleStatusTransitionEvent(StatusTransitionEvent event) {
@@ -65,7 +67,15 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new InvalidTransitionException("Invalid transition from " + currentStatus);
         }
 
-        serviceRequest.setStatus(nextStatus);
+        if (nextStatus == RequestStatus.ASSIGNED) {
+            serviceRequestService.autoAssign(requestId);
+
+            if (serviceRequest.getStatus() != RequestStatus.ASSIGNED) {
+                throw new InvalidTransitionException("Could not auto-assign request " + requestId);
+            }
+        } else {
+            serviceRequest.setStatus(nextStatus);
+        }
 
         updateTimestamps(serviceRequest, nextStatus);
 
