@@ -12,6 +12,11 @@ import java.util.UUID;
 @Mapper(componentModel = "spring")
 public interface ServiceRequestMapper {
 
+    @Mapping(target = "departmentId", source = "department.id")
+    @Mapping(target = "assignedToId", source = "assignedTo.id")
+    @Mapping(target = "requesterId", source = "requester.id")
+    ServiceRequestResponse toResponse(ServiceRequest serviceRequest);
+
     ServiceRequest toEntity(ServiceRequestResponse serviceRequestResponse);
 
     @Mapping(target = "requesterId", source = "requesterId")
