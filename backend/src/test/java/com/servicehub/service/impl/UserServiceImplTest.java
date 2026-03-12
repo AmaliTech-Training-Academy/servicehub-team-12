@@ -3,6 +3,7 @@ package com.servicehub.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -11,9 +12,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.servicehub.dto.UserDTO;
+import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
+import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.service.ServiceRequestService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -36,11 +40,17 @@ class UserServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ServiceRequestRepository serviceRequestRepository;
+
+    @Mock
+    private ServiceRequestService serviceRequestService;
+
     private UserServiceImpl userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl(userRepository);
+        userService = new UserServiceImpl(userRepository, serviceRequestRepository, serviceRequestService);
     }
 
     // ── findAll ───────────────────────────────────────────────────────────────
@@ -201,6 +211,7 @@ class UserServiceImplTest {
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
             assertEquals(Role.ADMIN, captor.getValue().getRole());
+            verify(serviceRequestRepository, never()).findAllByAssignedTo(any(User.class));
         }
 
         @Test
@@ -215,6 +226,7 @@ class UserServiceImplTest {
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
             assertEquals(Role.AGENT, captor.getValue().getRole());
+            verify(serviceRequestRepository, never()).findAllByAssignedTo(any(User.class));
         }
 
         @Test
@@ -229,6 +241,28 @@ class UserServiceImplTest {
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
             assertEquals(Role.USER, captor.getValue().getRole());
+            verify(serviceRequestRepository, never()).findAllByAssignedTo(any(User.class));
+        }
+
+        @Test
+        @DisplayName("reassigns tickets when changing role away from AGENT")
+        void shouldReassignTicketsWhenChangingRoleAwayFromAgent() {
+            UUID id = UUID.randomUUID();
+            User agent = user(id, "Agent User", Role.AGENT);
+            ServiceRequest firstTicket = request(UUID.randomUUID(), agent);
+            ServiceRequest secondTicket = request(UUID.randomUUID(), agent);
+
+            when(userRepository.findById(id)).thenReturn(Optional.of(agent));
+            when(serviceRequestRepository.findAllByAssignedTo(agent)).thenReturn(List.of(firstTicket, secondTicket));
+
+            userService.changeRole(id, Role.USER);
+
+            assertEquals(Role.USER, agent.getRole());
+            assertNull(firstTicket.getAssignedTo());
+            assertNull(secondTicket.getAssignedTo());
+            verify(serviceRequestRepository).saveAll(List.of(firstTicket, secondTicket));
+            verify(serviceRequestService).autoAssign(firstTicket.getId());
+            verify(serviceRequestService).autoAssign(secondTicket.getId());
         }
 
         @Test
@@ -490,5 +524,11 @@ class UserServiceImplTest {
         user.setProvider("local");
         return user;
     }
-}
 
+    private ServiceRequest request(UUID id, User assignedTo) {
+        ServiceRequest request = new ServiceRequest();
+        request.setId(id);
+        request.setAssignedTo(assignedTo);
+        return request;
+    }
+}
