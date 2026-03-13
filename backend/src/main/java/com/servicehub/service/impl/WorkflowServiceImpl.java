@@ -14,6 +14,7 @@ import com.servicehub.service.Notification;
 import com.servicehub.service.ServiceRequestService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,12 +43,13 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final Notification emailService;
     private final ServiceRequestService serviceRequestService;
 
+    @Async
     @EventListener
     void handleStatusTransitionEvent(StatusTransitionEvent event) {
         emailService.sendStatusUpdate(
-                event.request().getRequester().getEmail(),
-                event.request().getTitle(),
-                event.request().getStatus()
+                event.requesterEmail(),
+                event.requestTitle(),
+                event.status()
         );
     }
 
@@ -79,7 +81,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 
         updateTimestamps(serviceRequest, nextStatus);
 
-        publisher.publishEvent(new StatusTransitionEvent(serviceRequest));
+        publisher.publishEvent(new StatusTransitionEvent(
+                serviceRequest.getRequester().getEmail(),
+                serviceRequest.getTitle(),
+                serviceRequest.getStatus()
+        ));
 
         serviceRequest.setUpdatedAt(OffsetDateTime.now());
 

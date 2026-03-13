@@ -64,10 +64,17 @@ class WorkflowServiceImplTest {
         assignedAgent.setRole(Role.AGENT);
         assignedAgent.setDepartment("IT");
 
+        User requester = new User();
+        requester.setId(UUID.randomUUID());
+        requester.setEmail("requester@example.com");
+        requester.setFullName("Requester User");
+
         testRequest = new ServiceRequest();
         testRequest.setId(id);
+        testRequest.setTitle("Printer issue");
         testRequest.setStatus(RequestStatus.OPEN);
         testRequest.setDepartment(itDepartment);
+        testRequest.setRequester(requester);
         testRequest.setCreatedAt(OffsetDateTime.now());
         testRequest.setUpdatedAt(OffsetDateTime.now());
 
