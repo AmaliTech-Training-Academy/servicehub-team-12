@@ -95,7 +95,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         OffsetDateTime now = OffsetDateTime.now();
 
         switch (newStatus) {
-            case ASSIGNED:
+            case IN_PROGRESS:
                 if (serviceRequest.getFirstResponseAt() == null) {
                     serviceRequest.setFirstResponseAt(now);
                     log.debug("Set first_response_at for request {}", serviceRequest.getId());
