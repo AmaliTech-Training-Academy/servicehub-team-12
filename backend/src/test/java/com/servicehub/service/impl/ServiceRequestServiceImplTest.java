@@ -1,8 +1,6 @@
 package com.servicehub.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,8 +73,10 @@ class ServiceRequestServiceImplTest {
     void createShouldBuildAndPersistWithAutoRoutedDepartmentAndPublishSlaEvent() {
         UUID requesterId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
+        UUID savedRequestId = UUID.randomUUID();
         User requester = user(requesterId);
         Department department = department(departmentId, RequestCategory.IT_SUPPORT);
+        final ServiceRequest[] persistedRequest = new ServiceRequest[1];
 
         ServiceRequestUpsertRequest request = new ServiceRequestUpsertRequest();
         request.setTitle("  Laptop issue  ");
@@ -88,7 +88,15 @@ class ServiceRequestServiceImplTest {
         when(userRepository.findById(requesterId)).thenReturn(Optional.of(requester));
         when(departmentRepository.findByCategory(RequestCategory.IT_SUPPORT)).thenReturn(Optional.of(department));
         when(serviceRequestRepository.save(any(ServiceRequest.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    ServiceRequest saved = invocation.getArgument(0);
+                    saved.setId(savedRequestId);
+                    persistedRequest[0] = saved;
+                    return saved;
+                });
+        when(serviceRequestRepository.findById(any()))
+                .thenAnswer(ignored -> Optional.ofNullable(persistedRequest[0]));
+        when(autoAssignmentStrategy.selectAssignee(any(ServiceRequest.class))).thenReturn(Optional.empty());
         when(serviceRequestMapper.toResponse(any(ServiceRequest.class)))
                 .thenAnswer(invocation -> toResponse(invocation.getArgument(0)));
 
@@ -294,6 +302,8 @@ class ServiceRequestServiceImplTest {
     @DisplayName("create: leaves firstResponseAt null when initial status is OPEN")
     void createShouldNotSetFirstResponseAtWhenStatusIsOpen() {
         UUID requesterId = UUID.randomUUID();
+        UUID savedRequestId = UUID.randomUUID();
+        final ServiceRequest[] persistedRequest = new ServiceRequest[1];
         ServiceRequestUpsertRequest request = new ServiceRequestUpsertRequest();
         request.setTitle("Reset password");
         request.setCategory(RequestCategory.HR_REQUEST);
@@ -305,7 +315,15 @@ class ServiceRequestServiceImplTest {
         when(departmentRepository.findByCategory(RequestCategory.HR_REQUEST))
                 .thenReturn(Optional.of(department(UUID.randomUUID(), RequestCategory.HR_REQUEST)));
         when(serviceRequestRepository.save(any(ServiceRequest.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    ServiceRequest saved = invocation.getArgument(0);
+                    saved.setId(savedRequestId);
+                    persistedRequest[0] = saved;
+                    return saved;
+                });
+        when(serviceRequestRepository.findById(any()))
+                .thenAnswer(ignored -> Optional.ofNullable(persistedRequest[0]));
+        when(autoAssignmentStrategy.selectAssignee(any(ServiceRequest.class))).thenReturn(Optional.empty());
         when(serviceRequestMapper.toResponse(any(ServiceRequest.class)))
                 .thenAnswer(invocation -> toResponse(invocation.getArgument(0)));
 

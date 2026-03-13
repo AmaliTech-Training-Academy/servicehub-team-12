@@ -22,9 +22,4 @@ public class UserDTO {
     private boolean       active;
     private String        provider;
     private LocalDateTime createdAt;
-
-    // Agent workload stats (populated for agent views; null for non-agent users)
-    private Integer openTicketCount;
-    private Integer slaComplianceRatePct;
 }
-
