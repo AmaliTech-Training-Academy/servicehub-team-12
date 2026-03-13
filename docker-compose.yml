@@ -75,10 +75,14 @@ services:
     build: ./backend
     container_name: servicehub-backend
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
       SERVER_PORT: 8080
+
 
     ports:
       - "${BACKEND_PORT}:8080"
