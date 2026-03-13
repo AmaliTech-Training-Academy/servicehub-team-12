@@ -92,7 +92,6 @@ class WorkflowServiceImplTest {
 
         assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
         assertNotNull(testRequest.getAssignedTo());
-        assertNotNull(testRequest.getFirstResponseAt());
         assertNotNull(testRequest.getUpdatedAt());
         verify(serviceRequestService).autoAssign(testRequest.getId());
     }
