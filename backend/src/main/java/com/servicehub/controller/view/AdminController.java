@@ -1,30 +1,41 @@
 package com.servicehub.controller.view;
 
+import com.servicehub.dto.ServiceRequestPageQuery;
+import com.servicehub.dto.UserPageQuery;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestPriority;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.enums.Role;
 import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.UserService;
+import java.util.Collections;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.data.domain.Page;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 @Controller
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
+    private static final int PAGE_SIZE = 10;
+
     private static final List<RequestStatus> DONE_STATUSES =
         List.of(RequestStatus.RESOLVED, RequestStatus.CLOSED);
 
-    private UserService userService;
-    private ServiceRequestService serviceRequestService;
+    private final UserService userService;
+    private final ServiceRequestService serviceRequestService;
 
     public AdminController(UserService userService, ServiceRequestService serviceRequestService) {
         this.userService = userService;
@@ -48,28 +59,87 @@ public class AdminController {
         }
     }
 
-    // ── All Requests ─────────────────────────────────────────────
 
     @GetMapping("/requests")
     public String allRequests(Model model,
                               @AuthenticationPrincipal User principal,
                               @RequestParam(required = false) String q,
                               @RequestParam(required = false) String status,
-                              @RequestParam(required = false) String category,
+                              @RequestParam(required = false) String priority,
+                              @RequestParam(defaultValue = "1") int page,
                               @RequestParam(defaultValue = "false") boolean breached) {
         addCommonAttributes(model, principal);
 
-        var tickets = serviceRequestService.findAll();
-        if (breached) {
-            tickets = tickets.stream()
-                    .filter(t -> Boolean.TRUE.equals(t.getIsSlaBreached()))
-                    .filter(t -> !DONE_STATUSES.contains(t.getStatus()))
-                    .toList();
+        ServiceRequestPageQuery query = ServiceRequestPageQuery.builder()
+                .page(page)
+                .size(PAGE_SIZE)
+                .q(q)
+                .status(parseRequestStatus(status))
+                .priority(parseRequestPriority(priority))
+                .breached(breached)
+                .build();
+
+        Page<?> ticketsPage = serviceRequestService.findPage(query);
+
+        model.addAttribute("allTickets", ticketsPage.getContent());
+        addPaginationAttributes(model, ticketsPage, query.getPage());
+        addQueryAttributes(model, query, status, priority);
+        return "admin/requests";
+    }
+
+    private void addPaginationAttributes(Model model, Page<?> pageData, int requestedPage) {
+        model.addAttribute("currentPage", Math.max(requestedPage, 1));
+        model.addAttribute("totalPages", pageData.getTotalPages());
+        model.addAttribute("totalItems", pageData.getTotalElements());
+        model.addAttribute("hasPrevious", pageData.hasPrevious());
+        model.addAttribute("hasNext", pageData.hasNext());
+        model.addAttribute(
+                "pageNumbers",
+                pageData.getTotalPages() == 0
+                        ? Collections.emptyList()
+                        : buildPaginationItems(Math.max(requestedPage, 1), pageData.getTotalPages())
+        );
+
+        if (pageData.getTotalElements() == 0) {
+            model.addAttribute("startItem", 0);
+            model.addAttribute("endItem", 0);
+            return;
         }
 
-        model.addAttribute("allTickets", tickets);
-        model.addAttribute("breachedOnly", breached);
-        return "admin/requests";
+        model.addAttribute("startItem", (long) (pageData.getNumber() * pageData.getSize()) + 1);
+        model.addAttribute("endItem", (long) (pageData.getNumber() * pageData.getSize()) + pageData.getNumberOfElements());
+    }
+
+    private void addQueryAttributes(Model model, ServiceRequestPageQuery query, String rawStatus, String rawPriority) {
+        model.addAttribute("requestQuery", query);
+        model.addAttribute("q", query.getQ());
+        model.addAttribute("status", rawStatus);
+        model.addAttribute("priority", rawPriority);
+        model.addAttribute("breachedOnly", query.isBreached());
+    }
+
+    private RequestStatus parseRequestStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return RequestStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private RequestPriority parseRequestPriority(String priority) {
+        if (priority == null || priority.isBlank()) {
+            return null;
+        }
+
+        try {
+            return RequestPriority.valueOf(priority.toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     // ── User Management ──────────────────────────────────────────
@@ -78,13 +148,21 @@ public class AdminController {
     public String allUsers(Model model,
                            @AuthenticationPrincipal User principal,
                            @RequestParam(required = false) String q,
-                           @RequestParam(required = false) String role) {
+                           @RequestParam(required = false) String role,
+                           @RequestParam(defaultValue = "1") int page) {
         addCommonAttributes(model, principal);
-        Role roleEnum = null;
-        if (role != null && !role.isBlank()) {
-            try { roleEnum = Role.valueOf(role.toUpperCase()); } catch (IllegalArgumentException ignored) {}
-        }
-        model.addAttribute("users", userService.findAll(q, roleEnum));
+        Role roleEnum = parseRole(role);
+        UserPageQuery query = UserPageQuery.builder()
+                .page(page)
+                .size(PAGE_SIZE)
+                .q(q)
+                .role(roleEnum)
+                .build();
+        Page<?> usersPage = userService.findPage(query);
+        model.addAttribute("users", usersPage.getContent());
+        model.addAttribute("q", q);
+        model.addAttribute("filterRole", role);
+        addPaginationAttributes(model, usersPage, query.getPage());
         return "admin/users";
     }
 
@@ -104,6 +182,9 @@ public class AdminController {
 
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable UUID id,
+                             @RequestParam(defaultValue = "1") int page,
+                             @RequestParam(required = false) String q,
+                             @RequestParam(required = false) String role,
                              RedirectAttributes redirectAttributes) {
         try {
             userService.delete(id);
@@ -111,11 +192,14 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Could not delete user: " + e.getMessage());
         }
-        return "redirect:/admin/users";
+        return buildUsersRedirect(page, q, role);
     }
 
     @PostMapping("/users/{id}/toggle")
     public String toggleUser(@PathVariable UUID id,
+                             @RequestParam(defaultValue = "1") int page,
+                             @RequestParam(required = false) String q,
+                             @RequestParam(required = false) String role,
                              RedirectAttributes redirectAttributes) {
         try {
             userService.toggleActive(id);
@@ -123,7 +207,7 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Could not update user: " + e.getMessage());
         }
-        return "redirect:/admin/users";
+        return buildUsersRedirect(page, q, role);
     }
 
     // ── Agents ───────────────────────────────────────────────────
@@ -159,6 +243,9 @@ public class AdminController {
     @PostMapping("/roles/{id}")
     public String changeRole(@PathVariable UUID id,
                              @RequestParam String role,
+                             @RequestParam(defaultValue = "1") int page,
+                             @RequestParam(required = false) String q,
+                             @RequestParam(required = false, name = "filterRole") String filterRole,
                              RedirectAttributes redirectAttributes) {
         try {
             Role newRole = Role.valueOf(role.toUpperCase());
@@ -169,7 +256,68 @@ public class AdminController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Could not update role: " + e.getMessage());
         }
-        return "redirect:/admin/users";
+        return buildUsersRedirect(page, q, filterRole);
+    }
+
+    private Role parseRole(String role) {
+        if (role == null || role.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Role.valueOf(role.toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private String buildUsersRedirect(int page, String q, String role) {
+        StringBuilder redirect = new StringBuilder("redirect:/admin/users?page=").append(Math.max(page, 1));
+        appendQueryParam(redirect, "q", q);
+        appendQueryParam(redirect, "role", role);
+        return redirect.toString();
+    }
+
+    private void appendQueryParam(StringBuilder builder, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            builder.append("&").append(key).append("=").append(encode(value));
+        }
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private List<String> buildPaginationItems(int currentPage, int totalPages) {
+        if (totalPages <= 7) {
+            return IntStream.rangeClosed(1, totalPages)
+                    .mapToObj(String::valueOf)
+                    .toList();
+        }
+
+        List<String> items = new ArrayList<>();
+        items.add("1");
+
+        if (currentPage <= 4) {
+            addRange(items, 2, 5);
+            items.add("...");
+        } else if (currentPage >= totalPages - 3) {
+            items.add("...");
+            addRange(items, totalPages - 4, totalPages - 1);
+        } else {
+            items.add("...");
+            addRange(items, currentPage - 1, currentPage + 1);
+            items.add("...");
+        }
+
+        items.add(String.valueOf(totalPages));
+        return items;
+    }
+
+    private void addRange(List<String> items, int start, int end) {
+        for (int i = start; i <= end; i++) {
+            items.add(String.valueOf(i));
+        }
     }
 
     // ── Settings ─────────────────────────────────────────────────

@@ -1,14 +1,17 @@
 package com.servicehub.service.impl;
 
+import com.servicehub.dto.UserPageQuery;
 import com.servicehub.dto.UserDTO;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
 import com.servicehub.repository.UserRepository;
+import com.servicehub.repository.specification.UserSpecifications;
 import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +39,13 @@ public class UserServiceImpl implements UserService {
                         query == null ? "" : query.trim().toLowerCase(),
                         role);
         return users.stream().map(this::toDTO).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserDTO> findPage(UserPageQuery query) {
+        return userRepository.findAll(UserSpecifications.fromQuery(query), query.toPageable())
+                .map(this::toDTO);
     }
 
     @Override

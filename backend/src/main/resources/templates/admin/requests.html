@@ -42,27 +42,16 @@
 
     <div th:if="${allTickets != null and not #lists.isEmpty(allTickets)}"
          id="hs-admin-requests-table"
-         class="bg-white border border-card-line rounded-xl shadow-sm p-4 sm:p-5 flex flex-col --prevent-on-load-init"
-         data-request-table
-         data-priority-column-index="3"
-         data-status-column-index="7"
-         data-hs-datatable='{
-           "pageLength": 10,
-           "pagingOptions": {
-             "pageBtnClasses": "min-w-10 flex justify-center items-center text-foreground hover:bg-muted-hover focus:outline-hidden focus:bg-muted-focus py-2.5 text-sm rounded-full disabled:opacity-50 disabled:pointer-events-none"
-           },
-           "language": {
-             "zeroRecords": "<div class=&quot;p-5 h-full flex flex-col justify-center items-center text-center&quot;><div class=&quot;max-w-sm mx-auto&quot;><p class=&quot;mt-2 text-sm text-muted-foreground&quot;>No matching requests</p></div></div>"
-           }
-         }'>
-      <div class="flex flex-wrap items-center gap-2 mb-4">
+         class="bg-white border border-card-line rounded-xl shadow-sm p-4 sm:p-5 flex flex-col">
+      <form method="get" th:action="@{/admin/requests}" class="flex flex-wrap items-center gap-2 mb-4">
+        <input th:if="${breachedOnly}" type="hidden" name="breached" value="true" />
         <div class="grow">
           <div class="relative max-w-xs w-full">
             <label for="hs-table-filter-search" class="sr-only">Search</label>
-            <input type="text" name="hs-table-filter-search" id="hs-table-filter-search"
-                   class="py-1.5 sm:py-2 px-3 ps-9 block w-full bg-layer border-layer-line shadow-2xs rounded-lg sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:z-10 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none"
-                   placeholder="Search requests"
-                   data-hs-datatable-search>
+            <input type="text" name="q" id="hs-table-filter-search"
+                    class="py-1.5 sm:py-2 px-3 ps-9 block w-full bg-layer border-layer-line shadow-2xs rounded-lg sm:text-sm text-foreground placeholder:text-muted-foreground-1 focus:z-10 focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none"
+                    placeholder="Search requests"
+                    th:value="${q}">
             <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none ps-3">
               <svg class="size-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </div>
@@ -70,51 +59,24 @@
         </div>
 
         <div class="flex-1 flex items-center justify-end space-x-2">
-          <select class="hidden" data-hs-select='{
-            "toggleTag": "<button type=&quot;button&quot; aria-expanded=&quot;false&quot;><span data-title></span></button>",
-            "toggleClasses": "hs-select-disabled:pointer-events-none hs-select-disabled:opacity-50 relative py-2 px-3 pe-9 flex text-nowrap w-full cursor-pointer bg-layer border border-layer-line rounded-lg text-start text-sm text-layer-foreground shadow-2xs hover:bg-layer-hover focus:outline-hidden focus:bg-layer-focus before:absolute before:inset-0 before:z-1",
-            "dropdownClasses": "end-0 mt-2 z-50 w-20 max-h-72 p-1 space-y-0.5 bg-select border border-select-line rounded-lg shadow-md overflow-hidden overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-track]:bg-scrollbar-track [&::-webkit-scrollbar-thumb]:bg-scrollbar-thumb",
-            "optionClasses": "py-2 px-3 w-full text-sm text-select-item-foreground cursor-pointer hover:bg-select-item-hover rounded-md focus:outline-hidden focus:bg-select-item-focus",
-            "optionTemplate": "<div class=&quot;flex justify-between items-center w-full&quot;><span data-title></span><span class=&quot;hidden hs-selected:block&quot;><svg class=&quot;shrink-0 size-3.5 text-primary&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><polyline points=&quot;20 6 9 17 4 12&quot;/></svg></span></div>",
-            "extraMarkup": "<div class=&quot;absolute top-1/2 end-3 -translate-y-1/2&quot;><svg class=&quot;shrink-0 size-3.5 text-foreground&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;2&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;m7 15 5 5 5-5&quot;/><path d=&quot;m7 9 5-5 5 5&quot;/></svg></div>"
-          }' data-hs-datatable-page-entities>
-            <option value="10" selected>10</option>
-            <option value="15">15</option>
-            <option value="20">20</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
+          <select id="hs-request-filter-priority" name="priority" class="py-2 px-3 block w-28 bg-layer border border-layer-line rounded-lg sm:text-sm text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
+            <option value="">Priority</option>
+            <option value="LOW" th:selected="${priority == 'LOW'}">Low</option>
+            <option value="MEDIUM" th:selected="${priority == 'MEDIUM'}">Medium</option>
+            <option value="HIGH" th:selected="${priority == 'HIGH'}">High</option>
+            <option value="CRITICAL" th:selected="${priority == 'CRITICAL'}">Critical</option>
           </select>
-
-          <div class="hs-dropdown [--auto-close:inside] [--placement:bottom-right] relative sm:inline-flex z-20">
-            <button id="hs-dropdown-filter" type="button" class="hs-dropdown-toggle py-2 px-3 inline-flex items-center gap-x-2 text-sm rounded-lg bg-layer border border-layer-line text-layer-foreground shadow-2xs hover:bg-layer-hover focus:outline-hidden focus:bg-layer-focus disabled:opacity-50 disabled:pointer-events-none">
-              Filter
-              <svg class="hs-dropdown-open:rotate-180 size-2.5" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 5L8.16086 10.6869C8.35239 10.8637 8.64761 10.8637 8.83914 10.6869L15 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-
-            <div class="hs-dropdown-menu transition-[opacity,margin] duration hs-dropdown-open:opacity-100 opacity-0 hidden bg-dropdown border border-dropdown-line shadow-md rounded-lg p-2" aria-labelledby="hs-dropdown-filter">
-              <div class="max-w-xs w-full flex gap-x-2">
-                <select id="hs-request-filter-priority" class="py-1 px-2.5 block w-28 bg-layer border-layer-line rounded-md sm:text-[13px] text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
-                  <option value="">Priority</option>
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="CRITICAL">Critical</option>
-                </select>
-                <select id="hs-request-filter-status" class="py-1 px-2.5 block w-32 bg-layer border-layer-line rounded-md sm:text-[13px] text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
-                  <option value="">Status</option>
-                  <option value="OPEN">Open</option>
-                  <option value="ASSIGNED">Assigned</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <select id="hs-request-filter-status" name="status" class="py-2 px-3 block w-32 bg-layer border border-layer-line rounded-lg sm:text-sm text-foreground focus:border-primary-focus focus:ring-primary-focus disabled:opacity-50 disabled:pointer-events-none">
+            <option value="">Status</option>
+            <option value="OPEN" th:selected="${status == 'OPEN'}">Open</option>
+            <option value="ASSIGNED" th:selected="${status == 'ASSIGNED'}">Assigned</option>
+            <option value="IN_PROGRESS" th:selected="${status == 'IN_PROGRESS'}">In Progress</option>
+            <option value="RESOLVED" th:selected="${status == 'RESOLVED'}">Resolved</option>
+            <option value="CLOSED" th:selected="${status == 'CLOSED'}">Closed</option>
+          </select>
+          <button type="submit" class="py-2 px-3 inline-flex items-center gap-x-2 text-sm rounded-lg bg-layer border border-layer-line text-layer-foreground shadow-2xs hover:bg-layer-hover focus:outline-hidden focus:bg-layer-focus">Apply</button>
         </div>
-      </div>
+      </form>
 
       <div class="min-h-130 overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-none [&::-webkit-scrollbar-track]:bg-scrollbar-track [&::-webkit-scrollbar-thumb]:bg-scrollbar-thumb">
         <table class="min-w-full">
@@ -172,6 +134,10 @@
               <td class="p-3 whitespace-nowrap text-sm text-foreground" th:text="${#temporals.format(t.createdAt, 'dd MMM yyyy')}"></td>
               <td class="p-3 pe-5 whitespace-nowrap text-end text-sm font-medium">
                 <form th:action="@{/admin/requests/{id}/transition(id=${t.id})}" method="post" class="inline">
+                  <input type="hidden" name="page" th:value="${currentPage}" />
+                  <input th:if="${q != null and !#strings.isEmpty(q)}" type="hidden" name="q" th:value="${q}" />
+                  <input th:if="${status != null and !#strings.isEmpty(status)}" type="hidden" name="status" th:value="${status}" />
+                  <input th:if="${priority != null and !#strings.isEmpty(priority)}" type="hidden" name="priority" th:value="${priority}" />
                   <input th:if="${breachedOnly}" type="hidden" name="redirectToBreaches" value="true" />
                   <button type="submit"
                           class="inline-flex items-center gap-x-2 px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition">
@@ -182,6 +148,48 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 mt-5">
+        <div class="whitespace-nowrap text-sm text-muted-foreground-1">
+          Showing <span th:text="${startItem}">0</span> to <span th:text="${endItem}">0</span> of <span th:text="${totalItems}">0</span> requests
+        </div>
+
+        <nav th:if="${totalPages > 1}" class="flex items-center gap-x-1" aria-label="Pagination">
+          <a th:if="${hasPrevious}"
+             th:href="@{/admin/requests(page=${currentPage - 1}, q=${q}, status=${status}, priority=${priority}, breached=${breachedOnly})}"
+             class="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-lg text-foreground hover:bg-muted-hover focus:outline-hidden focus:bg-muted-focus">
+            <svg aria-hidden="true" class="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Previous</span>
+          </a>
+          <span th:unless="${hasPrevious}" class="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-lg text-muted-foreground-1 opacity-50">
+            <svg aria-hidden="true" class="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Previous</span>
+          </span>
+
+          <div class="flex items-center gap-x-1">
+            <a th:each="pageNumber : ${pageNumbers}"
+               th:if="${pageNumber != '...'}"
+               th:href="@{/admin/requests(page=${pageNumber}, q=${q}, status=${status}, priority=${priority}, breached=${breachedOnly})}"
+               th:text="${pageNumber}"
+               th:classappend="${pageNumber == currentPage} ? ' bg-muted-active font-medium' : ''"
+               class="min-h-9.5 min-w-9.5 flex justify-center items-center text-foreground hover:bg-muted-hover py-2 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-muted-focus">1</a>
+            <span th:each="pageNumber : ${pageNumbers}"
+                  th:if="${pageNumber == '...'}"
+                  class="min-h-9.5 min-w-9.5 inline-flex justify-center items-center py-2 px-1 text-sm text-muted-foreground-1">...</span>
+          </div>
+
+          <a th:if="${hasNext}"
+             th:href="@{/admin/requests(page=${currentPage + 1}, q=${q}, status=${status}, priority=${priority}, breached=${breachedOnly})}"
+             class="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-lg text-foreground hover:bg-muted-hover focus:outline-hidden focus:bg-muted-focus">
+            <span>Next</span>
+            <svg aria-hidden="true" class="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+          <span th:unless="${hasNext}" class="min-h-9.5 min-w-9.5 py-2 px-2.5 inline-flex justify-center items-center gap-x-1.5 text-sm rounded-lg text-muted-foreground-1 opacity-50">
+            <span>Next</span>
+            <svg aria-hidden="true" class="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </span>
+        </nav>
       </div>
     </div>
 
