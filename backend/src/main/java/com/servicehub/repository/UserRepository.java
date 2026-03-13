@@ -3,6 +3,7 @@ package com.servicehub.repository;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -10,11 +11,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
     boolean existsByEmail(String email);
-
-    boolean existsByEmailAndIdNot(String email, UUID id);
 
     Optional<User> findByEmail(String email);
 
@@ -35,8 +34,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             ORDER BY u.createdAt DESC
             """)
     List<User> search(@Param("query") String query, @Param("role") Role role);
-
-    List<User> findAllByRoleAndDepartmentIgnoreCaseOrderByCreatedAtAsc(Role role, String department);
 
     List<User> findAllByRoleAndDepartmentIgnoreCaseAndIsActiveTrueOrderByCreatedAtAsc(Role role, String department);
 }

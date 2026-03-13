@@ -1,6 +1,8 @@
 package com.servicehub.controller.view;
 
 import com.servicehub.service.WorkflowService;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +23,10 @@ public class AdminWorkflowViewController {
 
     @PostMapping("/{requestId}/transition")
     public String transitionStatus(@PathVariable UUID requestId,
+                                   @RequestParam(defaultValue = "1") int page,
+                                   @RequestParam(required = false) String q,
+                                   @RequestParam(required = false) String status,
+                                   @RequestParam(required = false) String priority,
                                    @RequestParam(defaultValue = "false") boolean redirectToBreaches,
                                    RedirectAttributes redirectAttributes) {
         try {
@@ -29,8 +35,25 @@ public class AdminWorkflowViewController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Could not transition request status: " + e.getMessage());
         }
-        return redirectToBreaches
-                ? "redirect:/admin/requests?breached=true"
-                : "redirect:/admin/requests";
+        StringBuilder redirect = new StringBuilder("redirect:/admin/requests?page=")
+                .append(Math.max(page, 1));
+
+        if (redirectToBreaches) {
+            redirect.append("&breached=true");
+        }
+        if (q != null && !q.isBlank()) {
+            redirect.append("&q=").append(encode(q));
+        }
+        if (status != null && !status.isBlank()) {
+            redirect.append("&status=").append(encode(status));
+        }
+        if (priority != null && !priority.isBlank()) {
+            redirect.append("&priority=").append(encode(priority));
+        }
+        return redirect.toString();
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

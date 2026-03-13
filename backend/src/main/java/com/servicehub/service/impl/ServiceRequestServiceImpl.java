@@ -1,5 +1,6 @@
 package com.servicehub.service.impl;
 
+import com.servicehub.dto.ServiceRequestPageQuery;
 import com.servicehub.dto.ServiceRequestResponse;
 import com.servicehub.dto.ServiceRequestUpsertRequest;
 import com.servicehub.event.ServiceRequestCreatedEvent;
@@ -7,11 +8,13 @@ import com.servicehub.mapper.ServiceRequestMapper;
 import com.servicehub.model.Department;
 import com.servicehub.model.ServiceRequest;
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestPriority;
 import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.exception.AccessDeniedException;
 import com.servicehub.exception.ResourceNotFoundException;
 import com.servicehub.repository.DepartmentRepository;
 import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.repository.specification.ServiceRequestSpecifications;
 import com.servicehub.repository.UserRepository;
 import com.servicehub.service.assignment.AutoAssignmentStrategy;
 import com.servicehub.service.ServiceRequestService;
@@ -21,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +73,19 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ServiceRequestResponse> findPage(ServiceRequestPageQuery query) {
+        return findPageByQuery(query);
+    }
+
+    private Page<ServiceRequestResponse> findPageByQuery(ServiceRequestPageQuery query) {
+        return serviceRequestRepository.findAll(
+                ServiceRequestSpecifications.fromQuery(query),
+                query.toPageable()
+        ).map(serviceRequestMapper::toResponse);
+    }
+
     private List<ServiceRequestResponse> mapRequesterRequests(User user) {
         return serviceRequestRepository.findAllByRequester(user).stream()
                 .sorted(Comparator.comparing(ServiceRequest::getCreatedAt,
@@ -87,14 +104,19 @@ public class ServiceRequestServiceImpl implements ServiceRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ServiceRequestResponse> findAllByAssignedToId(UUID userId) {
-        User user = userRepository.findById(userId)
+    public Page<ServiceRequestResponse> findAllByRequesterId(UUID userId, ServiceRequestPageQuery query) {
+        userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User"));
-        return serviceRequestRepository.findAllByAssignedTo(user).stream()
-                .sorted(Comparator.comparing(ServiceRequest::getCreatedAt,
-                        Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(serviceRequestMapper::toResponse)
-                .toList();
+        return findPageByQuery(query.forRequester(userId));
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ServiceRequestResponse> findAllByAssignedToId(UUID userId, ServiceRequestPageQuery query) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User"));
+        return findPageByQuery(query.forAssignee(userId));
     }
 
     @Override
