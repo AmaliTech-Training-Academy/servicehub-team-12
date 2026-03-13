@@ -42,14 +42,18 @@ spring:
               - profile
 
   mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:25}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    smtp:
-      auth: false
-      starttls:
-        enable: false
+    host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:3d79c86e3e702c}
+    password: ${MAIL_PASSWORD:YOUR_FULL_PASSWORD_HERE}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: ${JWT_EXPIRATION:900000}              # 15 minutes in ms
@@ -59,4 +63,3 @@ logging:
   level:
     org.springframework: ${SPRING_LOG_LEVEL:INFO}
     com.servicehub: ${APP_LOG_LEVEL:DEBUG}
-
