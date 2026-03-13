@@ -1,6 +1,7 @@
 package com.servicehub.controller.view;
 
 import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestStatus;
 import com.servicehub.model.enums.Role;
 import com.servicehub.service.ServiceRequestService;
 import com.servicehub.service.UserService;
@@ -11,12 +12,16 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
 @RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
+
+    private static final List<RequestStatus> DONE_STATUSES =
+        List.of(RequestStatus.RESOLVED, RequestStatus.CLOSED);
 
     private UserService userService;
     private ServiceRequestService serviceRequestService;
@@ -50,9 +55,20 @@ public class AdminController {
                               @AuthenticationPrincipal User principal,
                               @RequestParam(required = false) String q,
                               @RequestParam(required = false) String status,
-                              @RequestParam(required = false) String category) {
+                              @RequestParam(required = false) String category,
+                              @RequestParam(defaultValue = "false") boolean breached) {
         addCommonAttributes(model, principal);
-        model.addAttribute("allTickets", serviceRequestService.findAll());
+
+        var tickets = serviceRequestService.findAll();
+        if (breached) {
+            tickets = tickets.stream()
+                    .filter(t -> Boolean.TRUE.equals(t.getIsSlaBreached()))
+                    .filter(t -> !DONE_STATUSES.contains(t.getStatus()))
+                    .toList();
+        }
+
+        model.addAttribute("allTickets", tickets);
+        model.addAttribute("breachedOnly", breached);
         return "admin/requests";
     }
 
