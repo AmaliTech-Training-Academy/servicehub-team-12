@@ -470,16 +470,20 @@ class UserServiceImplTest {
         }
 
         @Test
-        @DisplayName("defaults workload stats to zero")
-        void shouldDefaultWorkloadStatsToZero() {
+        @DisplayName("maps baseline DTO fields for an agent user")
+        void shouldMapBaselineFieldsForAgentUser() {
             UUID id = UUID.randomUUID();
             when(userRepository.findById(id))
                 .thenReturn(Optional.of(user(id, "Kwame Boateng", Role.AGENT)));
 
             UserDTO dto = userService.findById(id);
 
-            assertEquals(0, dto.getOpenTicketCount());
-            assertEquals(0, dto.getSlaComplianceRatePct());
+            assertEquals(id, dto.getId());
+            assertEquals("Kwame", dto.getFirstName());
+            assertEquals("Boateng", dto.getLastName());
+            assertEquals("user@test.com", dto.getEmail());
+            assertEquals("AGENT", dto.getRole());
+            assertTrue(dto.isActive());
         }
 
         @Test

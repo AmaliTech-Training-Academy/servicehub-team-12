@@ -1,8 +1,13 @@
 package com.servicehub.service.impl;
 
+import com.servicehub.model.Department;
 import com.servicehub.model.ServiceRequest;
+import com.servicehub.model.User;
+import com.servicehub.model.enums.RequestCategory;
 import com.servicehub.model.enums.RequestStatus;
+import com.servicehub.model.enums.Role;
 import com.servicehub.repository.ServiceRequestRepository;
+import com.servicehub.service.Notification;
 import com.servicehub.service.ServiceRequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,15 +41,33 @@ class WorkflowServiceImplTest {
     @Mock
     private ApplicationEventPublisher publisher;
 
+    @Mock
+    private Notification emailService;
+
     private ServiceRequest testRequest;
+
+    private User assignedAgent;
 
     @BeforeEach
     void setUp() {
         UUID id = UUID.randomUUID();
 
+        Department itDepartment = new Department();
+        itDepartment.setId(UUID.randomUUID());
+        itDepartment.setName("IT");
+        itDepartment.setCategory(RequestCategory.IT_SUPPORT);
+
+        assignedAgent = new User();
+        assignedAgent.setId(UUID.randomUUID());
+        assignedAgent.setEmail("agent@example.com");
+        assignedAgent.setFullName("Assigned Agent");
+        assignedAgent.setRole(Role.AGENT);
+        assignedAgent.setDepartment("IT");
+
         testRequest = new ServiceRequest();
         testRequest.setId(id);
         testRequest.setStatus(RequestStatus.OPEN);
+        testRequest.setDepartment(itDepartment);
         testRequest.setCreatedAt(OffsetDateTime.now());
         testRequest.setUpdatedAt(OffsetDateTime.now());
 
@@ -52,15 +75,26 @@ class WorkflowServiceImplTest {
                 .thenReturn(Optional.of(testRequest));
     }
 
+    private void stubAutoAssignSuccess() {
+        doAnswer(ignored -> {
+            testRequest.setAssignedTo(assignedAgent);
+            testRequest.setStatus(RequestStatus.ASSIGNED);
+            return null;
+        }).when(serviceRequestService).autoAssign(testRequest.getId());
+    }
+
     @Test
     @DisplayName("Should transition from OPEN to ASSIGNED")
     void testTransitionStatus_OpenToAssigned() {
 
+        stubAutoAssignSuccess();
         workflowService.transitionStatus(testRequest.getId());
 
         assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
+        assertNotNull(testRequest.getAssignedTo());
         assertNotNull(testRequest.getFirstResponseAt());
         assertNotNull(testRequest.getUpdatedAt());
+        verify(serviceRequestService).autoAssign(testRequest.getId());
     }
 
     @Test
@@ -116,6 +150,7 @@ class WorkflowServiceImplTest {
     @DisplayName("Should complete full workflow")
     void testTransitionStatus_CompleteWorkflow() {
 
+        stubAutoAssignSuccess();
         workflowService.transitionStatus(testRequest.getId());
         assertEquals(RequestStatus.ASSIGNED, testRequest.getStatus());
 
@@ -127,6 +162,8 @@ class WorkflowServiceImplTest {
 
         workflowService.transitionStatus(testRequest.getId());
         assertEquals(RequestStatus.CLOSED, testRequest.getStatus());
+
+        verify(serviceRequestService, times(1)).autoAssign(testRequest.getId());
     }
 
 }
