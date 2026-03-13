@@ -174,8 +174,6 @@ def _build_local_departments() -> pd.DataFrame:
                 "category": category,
                 "name": spec["name"],
                 "description": spec["description"],
-                "contact_email": spec["contact_email"],
-                "is_active": True,
                 "created_at": now,
             }
         )
@@ -285,8 +283,7 @@ def _ensure_departments(engine: Engine) -> pd.DataFrame:
         SELECT id,
                name,
                category
-        FROM departments
-        WHERE is_active = TRUE
+        FROM departments        
         """
     )
 
