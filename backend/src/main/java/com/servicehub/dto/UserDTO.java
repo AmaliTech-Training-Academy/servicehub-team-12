@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+/**
+ * Data transfer object for user data exchange.
+ */
 
 @Data
 @Builder

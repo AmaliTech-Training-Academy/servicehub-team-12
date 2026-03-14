@@ -7,6 +7,9 @@ import com.servicehub.dto.ServiceRequestUpsertRequest;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+/**
+ * Defines service request management operations.
+ */
 
 public interface ServiceRequestService {
     ServiceRequestResponse create(ServiceRequestUpsertRequest request);

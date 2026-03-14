@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+/**
+ * Assigns requests to the eligible agent with the lowest active workload.
+ */
 
 @Component
 @RequiredArgsConstructor

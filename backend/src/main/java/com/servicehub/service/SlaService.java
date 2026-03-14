@@ -2,6 +2,9 @@ package com.servicehub.service;
 
 import com.servicehub.model.ServiceRequest;
 import java.time.OffsetDateTime;
+/**
+ * Defines SLA calculation, tracking, and breach-detection operations.
+ */
 
 public interface SlaService {
 

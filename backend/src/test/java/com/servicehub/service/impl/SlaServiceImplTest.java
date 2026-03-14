@@ -35,6 +35,9 @@ import com.servicehub.repository.SlaPolicyRepository;
 import com.servicehub.service.WorkingHoursCalculator;
 
 import static org.mockito.Mockito.*;
+/**
+ * Tests SLA service behavior.
+ */
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

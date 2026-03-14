@@ -8,6 +8,9 @@ import lombok.Getter;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+/**
+ * Data transfer object for service request pagination and filtering.
+ */
 
 @Getter
 @Builder

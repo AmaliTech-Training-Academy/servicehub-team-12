@@ -8,6 +8,9 @@ import org.junit.jupiter.api.TestInstance;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
+/**
+ * Covers SLA-related API scenarios.
+ */
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class SlaTest extends BaseTest {

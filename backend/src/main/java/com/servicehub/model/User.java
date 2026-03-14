@@ -16,6 +16,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+/**
+ * JPA entity representing an authenticated ServiceHub user.
+ */
 
 @Entity
 @Table(name = "users")

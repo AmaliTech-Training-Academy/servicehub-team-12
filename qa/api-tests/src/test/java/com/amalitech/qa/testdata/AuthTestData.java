@@ -1,4 +1,7 @@
 package com.amalitech.qa.testdata;
+/**
+ * Provides authentication-related test payloads and constants.
+ */
 
 public class AuthTestData {
 

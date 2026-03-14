@@ -20,6 +20,24 @@ import com.servicehub.service.SlaService;
 import com.servicehub.service.WorkingHoursCalculator;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Default {@link SlaService} implementation for applying SLA policy rules to
+ * service requests.
+ *
+ * <p>This service resolves the correct {@link SlaPolicy} for a request's
+ * category and priority, calculates business-hour-aware deadlines with
+ * {@link WorkingHoursCalculator}, and stores the resulting SLA target on the
+ * request entity.
+ *
+ * <p>It also monitors persisted requests for deadline breaches, updates the
+ * breach flag when a ticket moves past its SLA deadline, and sends notification
+ * messages to the requester and assignee when a breach is detected.
+ *
+ * <p>In addition to deadline management, the implementation exposes helper
+ * calculations for response and resolution times so dashboard and reporting
+ * features can derive timing metrics from request timestamps.
+ */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor

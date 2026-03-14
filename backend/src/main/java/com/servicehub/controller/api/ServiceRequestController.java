@@ -16,6 +16,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+/**
+ * Exposes CRUD and query endpoints for service requests.
+ */
 
 @RestController
 @RequestMapping({"/api/service-requests", "/api/requests"})

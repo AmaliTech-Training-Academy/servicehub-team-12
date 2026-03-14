@@ -8,6 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+/**
+ * Data transfer object for service request create/update operations.
+ */
 
 @Getter
 @Setter

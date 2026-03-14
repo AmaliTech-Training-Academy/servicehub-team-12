@@ -6,6 +6,9 @@ import com.servicehub.model.enums.RequestStatus;
 import jakarta.persistence.criteria.JoinType;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
+/**
+ * Builds JPA specifications for filtering service requests.
+ */
 
 public final class ServiceRequestSpecifications {
 

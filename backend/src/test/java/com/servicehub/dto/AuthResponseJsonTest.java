@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+/**
+ * Tests JSON serialization behavior for authentication responses.
+ */
 
 @DisplayName("AuthResponse JSON")
 class AuthResponseJsonTest {

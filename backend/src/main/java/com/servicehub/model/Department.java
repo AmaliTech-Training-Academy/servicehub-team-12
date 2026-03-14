@@ -10,6 +10,9 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+/**
+ * JPA entity representing a department that handles routed requests.
+ */
 
 @Entity
 @Table(name = "departments")

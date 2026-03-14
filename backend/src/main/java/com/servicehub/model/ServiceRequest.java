@@ -18,6 +18,9 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+/**
+ * JPA entity representing an internal service request ticket.
+ */
 
 @Entity
 @Table(name = "service_requests")
@@ -70,7 +73,6 @@ public class ServiceRequest {
     @Column(name = "closed_at")
     private OffsetDateTime closedAt;
 
-    // REVIEW: This can be derived and so it shouldn't be a field
     @Column(name = "is_sla_breached", nullable = false)
     private Boolean isSlaBreached;
 

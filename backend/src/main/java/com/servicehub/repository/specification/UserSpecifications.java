@@ -4,6 +4,9 @@ import com.servicehub.dto.UserPageQuery;
 import com.servicehub.model.User;
 import com.servicehub.model.enums.Role;
 import org.springframework.data.jpa.domain.Specification;
+/**
+ * Builds JPA specifications for filtering users.
+ */
 
 public final class UserSpecifications {
 

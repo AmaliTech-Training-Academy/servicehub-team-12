@@ -3,6 +3,9 @@ package com.servicehub.service;
 import java.util.UUID;
 
 import com.servicehub.exception.InvalidTransitionException;
+/**
+ * Defines workflow transition operations for service requests.
+ */
 
 public interface WorkflowService {
 

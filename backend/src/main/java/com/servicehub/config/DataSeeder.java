@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+/**
+ * Seeds default departments, users, and SLA policies on application startup.
+ */
 
 @Slf4j
 @Component

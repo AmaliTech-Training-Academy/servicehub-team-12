@@ -29,6 +29,27 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+/**
+ * Default {@link ServiceRequestService} implementation for managing service request
+ * tickets throughout their lifecycle.
+ *
+ * <p>This service is responsible for creating and updating requests, resolving
+ * requester and assignee references, routing tickets to the appropriate
+ * department, and exposing list and page-based retrieval methods for general,
+ * requester-specific, and assignee-specific views.
+ *
+ * <p>When a request is created, the service persists the initial ticket state,
+ * attempts automatic assignment when no assignee is provided, and publishes a
+ * {@link ServiceRequestCreatedEvent} so downstream listeners can calculate SLA
+ * deadlines or trigger related side effects. When category or priority values are
+ * changed during an update, the same event is republished to allow SLA data to be
+ * recalculated against the new routing or urgency.
+ *
+ * <p>The implementation also centralizes validation and lookup behavior for
+ * dependent entities such as users and departments, translating missing or invalid
+ * references into HTTP-friendly exceptions that controllers can surface to API
+ * clients.
+ */
 
 @Service
 @RequiredArgsConstructor

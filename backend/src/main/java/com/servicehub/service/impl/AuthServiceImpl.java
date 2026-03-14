@@ -37,6 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
+/**
+ * Implements authentication, token rotation, and logout workflows.
+ */
 
 @Slf4j
 @Service

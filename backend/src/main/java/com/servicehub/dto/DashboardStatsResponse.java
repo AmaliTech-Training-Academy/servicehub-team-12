@@ -2,6 +2,9 @@ package com.servicehub.dto;
 
 import lombok.*;
 import java.util.Map;
+/**
+ * Data transfer object for dashboard statistics.
+ */
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class DashboardStatsResponse {

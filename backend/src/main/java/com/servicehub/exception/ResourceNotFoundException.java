@@ -1,6 +1,9 @@
 package com.servicehub.exception;
 
 import org.springframework.http.HttpStatus;
+/**
+ * Exception raised for resource not found exception.
+ */
 
 public class ResourceNotFoundException extends AuthException {
 
