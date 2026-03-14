@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.Instant;
 import java.util.UUID;
+/**
+ * JPA entity representing a persisted refresh token.
+ */
 
 @Entity
 @Table(name = "refresh_tokens")

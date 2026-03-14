@@ -3,6 +3,9 @@ package com.amalitech.qa.base;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeAll;
+/**
+ * Provides shared test setup utilities.
+ */
 
 public class BaseTest {
 

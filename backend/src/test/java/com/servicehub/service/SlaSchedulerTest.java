@@ -3,6 +3,9 @@ package com.servicehub.service;
 import com.servicehub.service.impl.SlaServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+/**
+ * Tests scheduled SLA breach checking behavior.
+ */
 
 class SlaSchedulerTest {
 

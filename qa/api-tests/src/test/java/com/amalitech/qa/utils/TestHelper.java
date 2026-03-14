@@ -5,6 +5,9 @@ import com.amalitech.qa.testdata.ServiceRequestTestData;
 import io.restassured.http.ContentType;
 
 import static io.restassured.RestAssured.*;
+/**
+ * Provides reusable helper methods for API tests.
+ */
 
 public class TestHelper {
 

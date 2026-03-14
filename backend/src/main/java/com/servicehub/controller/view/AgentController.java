@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.Collections;
+/**
+ * Serves agent-facing performance and scheduling views.
+ */
 
 @Controller
 @RequestMapping("/agent")

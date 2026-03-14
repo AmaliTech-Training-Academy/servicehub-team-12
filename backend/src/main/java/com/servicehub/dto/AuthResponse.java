@@ -3,6 +3,9 @@ package com.servicehub.dto;
 import lombok.*;
 
 import java.util.UUID;
+/**
+ * Data transfer object for authentication results.
+ */
 
 @Data @AllArgsConstructor @NoArgsConstructor @Builder
 public class AuthResponse {

@@ -12,6 +12,9 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+/**
+ * Generates, validates, and parses JWT tokens for authentication flows.
+ */
 
 @Service
 public class JwtService {

@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+/**
+ * Data transfer object for register request.
+ */
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class RegisterRequest {

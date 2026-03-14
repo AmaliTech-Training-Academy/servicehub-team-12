@@ -21,6 +21,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+/**
+ * Translates authentication-related exceptions into API responses.
+ */
 
 @Slf4j
 @RestControllerAdvice

@@ -1,4 +1,7 @@
 package com.servicehub.exception;
+/**
+ * Exception raised for SLA policy not found exception.
+ */
 
 public class SlaPolicyNotFoundException extends RuntimeException {
     

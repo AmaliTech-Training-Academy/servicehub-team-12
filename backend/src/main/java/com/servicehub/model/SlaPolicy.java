@@ -11,6 +11,9 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+/**
+ * JPA entity representing the SLA policy for a category and priority pair.
+ */
 
 @Entity
 @Table(name = "sla_policies")

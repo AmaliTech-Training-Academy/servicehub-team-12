@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
+/**
+ * Provides persistence operations for refresh tokens.
+ */
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 

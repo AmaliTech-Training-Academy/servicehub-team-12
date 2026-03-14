@@ -6,6 +6,9 @@ import com.servicehub.service.HealthService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+/**
+ * Implements application health status reporting.
+ */
 
 @Service
 public class HealthServiceImpl implements HealthService {

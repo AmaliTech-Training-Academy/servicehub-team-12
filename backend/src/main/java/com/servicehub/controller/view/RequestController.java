@@ -25,6 +25,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+/**
+ * Serves Thymeleaf views for submitting and browsing service requests.
+ */
 
 @Controller
 @RequestMapping("/requests")

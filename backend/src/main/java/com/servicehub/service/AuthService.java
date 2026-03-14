@@ -6,6 +6,9 @@ import com.servicehub.dto.RefreshTokenRequest;
 import com.servicehub.dto.RegisterRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+/**
+ * Defines authentication and token-management operations.
+ */
 
 public interface AuthService {
 

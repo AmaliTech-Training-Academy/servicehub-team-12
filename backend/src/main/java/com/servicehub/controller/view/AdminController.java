@@ -23,6 +23,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+/**
+ * Serves administrator-facing dashboard and management views.
+ */
 
 @Controller
 @RequestMapping("/admin")

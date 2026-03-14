@@ -10,6 +10,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+/**
+ * Data transfer object for service request details.
+ */
 
 @Getter
 @Setter

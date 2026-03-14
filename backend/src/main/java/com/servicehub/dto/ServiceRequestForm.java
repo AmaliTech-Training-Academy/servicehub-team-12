@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+/**
+ * Data transfer object for service request form binding.
+ */
 
 @Getter
 @Setter

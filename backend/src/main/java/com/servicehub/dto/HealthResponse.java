@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+/**
+ * Data transfer object for health check results.
+ */
 
 @Data
 @Builder

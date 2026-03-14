@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.*;
         import static org.hamcrest.Matchers.*;
+/**
+ * Covers health API scenarios.
+ */
 
 public class HealthApiTest extends BaseTest {
 

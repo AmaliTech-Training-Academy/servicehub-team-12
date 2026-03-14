@@ -24,6 +24,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.time.LocalDateTime;
 import java.util.Map;
+/**
+ * Configures Spring Security authentication and authorization rules.
+ */
 
 @Configuration
 @EnableWebSecurity

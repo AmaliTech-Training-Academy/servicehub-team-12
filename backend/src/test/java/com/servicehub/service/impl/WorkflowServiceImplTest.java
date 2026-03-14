@@ -25,6 +25,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+/**
+ * Tests workflow service behavior.
+ */
 
 @ExtendWith(MockitoExtension.class)
 class WorkflowServiceImplTest {

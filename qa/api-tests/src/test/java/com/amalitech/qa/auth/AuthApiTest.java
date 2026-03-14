@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
+/**
+ * Covers authentication API scenarios.
+ */
 
 public class AuthApiTest extends BaseTest {
 

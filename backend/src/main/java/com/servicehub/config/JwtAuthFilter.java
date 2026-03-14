@@ -22,6 +22,9 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+/**
+ * Intercepts requests to authenticate JWT bearer tokens.
+ */
 
 @Component
 @RequiredArgsConstructor

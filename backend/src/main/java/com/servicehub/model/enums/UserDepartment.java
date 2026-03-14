@@ -1,6 +1,9 @@
 package com.servicehub.model.enums;
 
 import java.util.Arrays;
+/**
+ * Enumerates the departments available for user assignment.
+ */
 
 public enum UserDepartment {
     IT("IT", RequestCategory.IT_SUPPORT),

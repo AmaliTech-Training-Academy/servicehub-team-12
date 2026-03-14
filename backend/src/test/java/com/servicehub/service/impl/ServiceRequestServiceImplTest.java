@@ -36,6 +36,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+/**
+ * Tests service request service behavior.
+ */
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ServiceRequestService")

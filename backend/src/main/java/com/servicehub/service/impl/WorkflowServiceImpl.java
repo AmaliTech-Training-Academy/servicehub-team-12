@@ -25,6 +25,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Default {@link WorkflowService} implementation for advancing service requests
+ * through the supported status lifecycle.
+ *
+ * <p>This service enforces the forward-only workflow defined by the application,
+ * moving requests from {@link RequestStatus#OPEN} through to
+ * {@link RequestStatus#CLOSED} while rejecting invalid transitions.
+ *
+ * <p>During transitions, it coordinates related side effects such as auto-assignment
+ * when a request first becomes assigned, timestamp updates for first
+ * response, resolution, and closure milestones, and publication of
+ * {@link StatusTransitionEvent} notifications for asynchronous email delivery.
+ *
+ * <p>The implementation centralizes workflow state changes so business rules,
+ * audit-relevant timestamps, and outbound notifications stay consistent no matter
+ * which controller or caller initiates the transition.
+ */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor

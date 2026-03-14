@@ -19,6 +19,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
+/**
+ * Implements user management and lookup operations.
+ */
 
 @Service
 @RequiredArgsConstructor
