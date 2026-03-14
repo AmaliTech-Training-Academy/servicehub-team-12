@@ -3,6 +3,7 @@
 ServiceHub is an internal service request and ticket management platform for handling requests across IT, HR, and Facilities. It combines a Spring Boot backend, Thymeleaf web interface, PostgreSQL persistence, SLA tracking, automated routing, and QA/data-engineering support inside a single repository.
 
 ![Admin dashboard screenshot placeholder](docs/images/admin-dashboard.png)
+[Link to ServiceHub](https://23viecdg8c.eu-west-1.awsapprunner.com/)
 
 ## What the project does
 
